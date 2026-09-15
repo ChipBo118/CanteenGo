@@ -1,0 +1,282 @@
+/* admin.css — Giao diện trang quản trị CanteenGo (dùng chung biến màu với styles.css) */
+
+.admin-body {
+  background: linear-gradient(180deg, #fff9f6 0%, var(--bg) 100%);
+  min-height: 100vh;
+}
+
+.admin-brand {
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+/* ---------- Khung trang dashboard ---------- */
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 249, 246, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.admin-topbar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-user-chip {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 122, 26, 0.08);
+  color: var(--primary-dark);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.admin-ghost-btn {
+  padding: 0.65rem 1rem;
+  font-size: 0.84rem;
+}
+
+.admin-main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 28px 60px;
+  display: grid;
+  gap: 26px;
+}
+
+.admin-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-page-heading h2 {
+  margin: 8px 0 0;
+  font-size: clamp(1.7rem, 2vw, 2.2rem);
+  letter-spacing: -0.05em;
+}
+
+/* ---------- Thẻ số liệu tổng quan ---------- */
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-stat-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.15rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-stat-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.admin-stat-value {
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  word-break: break-word;
+}
+
+.admin-stat-hint {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+/* ---------- Khối panel (biểu đồ / bảng) ---------- */
+.admin-panel {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 1.4rem 1.4rem 1.6rem;
+}
+
+.admin-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.admin-panel-heading h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.15rem;
+}
+
+.admin-panel-sub {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.mock-tag {
+  display: inline-flex;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 191, 82, 0.16);
+  color: #b87600;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Biểu đồ cột (thuần CSS) ---------- */
+.admin-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 4px 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 170px;
+  gap: 8px;
+}
+
+.chart-bar {
+  width: 100%;
+  max-width: 42px;
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(180deg, #ffb257 0%, var(--primary) 100%);
+  transition: height 0.3s ease;
+}
+
+.chart-bar-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ---------- Bảng dữ liệu ---------- */
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.admin-table th {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-icon-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.admin-icon-btn:hover {
+  border-color: rgba(255, 122, 26, 0.25);
+  color: var(--primary-dark);
+}
+
+.admin-icon-btn.admin-danger {
+  color: #d64545;
+  border-color: rgba(214, 69, 69, 0.2);
+}
+
+.admin-icon-btn.admin-danger:hover {
+  background: rgba(214, 69, 69, 0.06);
+}
+
+.admin-danger-btn {
+  background: linear-gradient(135deg, #e2554e 0%, #d64545 100%);
+  box-shadow: 0 18px 30px rgba(214, 69, 69, 0.22);
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1180px) {
+  .admin-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-topbar-inner,
+  .admin-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CanteenGo Admin | Quản trị hệ thống</title>
+    <meta name="description" content="Trang quản trị CanteenGo dành cho quản trị viên (@vwa.edu.vn)." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body class="admin-body">
+    <!-- Đăng nhập quản trị thực hiện ở trang chính (index.html, tab "Quản trị").
+         Nếu chưa có phiên hợp lệ, admin.js sẽ chuyển hướng ngay về trang chính
+         trước khi dashboard bên dưới kịp hiển thị. -->
+
+    <!-- ============ DASHBOARD QUẢN TRỊ (chỉ hiện với phiên quản trị hợp lệ) ============ -->
+    <div class="admin-dashboard" id="adminDashboard" hidden>
+      <header class="admin-topbar">
+        <div class="admin-topbar-inner">
+          <div class="brand admin-brand" style="margin-bottom: 0;">
+            <div class="brand-mark">C</div>
+            <span>CanteenGo Admin</span>
+          </div>
+          <div class="admin-topbar-actions">
+            <span class="admin-user-chip" id="adminUserChip"></span>
+            <a href="index.html" class="ghost-btn admin-ghost-btn">Xem trang khách</a>
+            <button class="ghost-btn admin-ghost-btn" id="adminLogoutBtn" type="button">Đăng xuất</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <div class="admin-page-heading">
+          <div>
+            <span class="eyebrow dark">Tổng quan</span>
+            <h2>Bảng điều khiển quản trị</h2>
+          </div>
+          <button class="secondary-btn" id="refreshSalesBtn" type="button">🔄 Tạo lại dữ liệu mô phỏng</button>
+        </div>
+
+        <section class="admin-stat-grid" id="adminStatGrid"></section>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h3>Doanh thu theo ngày <span class="mock-tag">Mô phỏng</span></h3>
+            <span class="admin-panel-sub">7 ngày gần nhất</span>
+          </div>
+          <div class="admin-chart" id="dailyChart"></div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="dailyTable"></table>
+          </div>
+        </section>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h3>Doanh thu theo tháng <span class="mock-tag">Mô phỏng</span></h3>
+            <span class="admin-panel-sub">6 tháng gần nhất</span>
+          </div>
+          <div class="admin-chart" id="monthlyChart"></div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="monthlyTable"></table>
+          </div>
+        </section>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h3>Số lượng bán ra theo món <span class="mock-tag">Mô phỏng</span></h3>
+            <span class="admin-panel-sub">Tổng hợp theo danh sách món ăn hiện tại</span>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="itemSalesTable"></table>
+          </div>
+        </section>
+
+        <section class="admin-panel">
+          <div class="admin-panel-heading">
+            <h3>Quản lý món ăn</h3>
+            <button class="primary-btn" id="addItemBtn" type="button">+ Thêm món mới</button>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="menuTable"></table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ============ MODAL: THÊM / SỬA MÓN ĂN ============ -->
+    <div class="modal-overlay" id="itemModal">
+      <div class="modal-card item-modal-card">
+        <button class="modal-close" type="button" data-close="itemModal">×</button>
+        <div class="modal-header">
+          <span class="eyebrow dark">Món ăn</span>
+          <h3 id="itemModalTitle">Thêm món mới</h3>
+        </div>
+
+        <form class="auth-form" id="itemForm">
+          <input type="hidden" id="itemId" />
+          <label>
+            <span>Tên món</span>
+            <input type="text" id="itemName" required />
+          </label>
+          <div class="admin-form-row">
+            <label>
+              <span>Danh mục</span>
+              <select id="itemCategory">
+                <option value="popular">Phổ biến</option>
+                <option value="veg">Chay</option>
+                <option value="combo">Combo</option>
+              </select>
+            </label>
+            <label>
+              <span>Giá bán (đ)</span>
+              <input type="number" id="itemPrice" min="1000" step="1000" required />
+            </label>
+          </div>
+          <label>
+            <span>Mô tả ngắn</span>
+            <textarea id="itemDescription" rows="2" placeholder="Mô tả ngắn gọn về món ăn"></textarea>
+          </label>
+          <div class="admin-form-row">
+            <label>
+              <span>Calories (kcal)</span>
+              <input type="number" id="itemKcal" min="0" />
+            </label>
+            <label>
+              <span>Thời gian chuẩn bị (phút)</span>
+              <input type="number" id="itemTime" min="0" />
+            </label>
+          </div>
+          <label>
+            <span>Ảnh món ăn (URL, tuỳ chọn)</span>
+            <input type="url" id="itemImageUrl" placeholder="https://..." />
+          </label>
+          <p class="auth-error" id="itemFormError" hidden></p>
+          <button type="submit" class="primary-btn full-width" id="itemFormSubmit">Thêm món ăn</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ MODAL: XÁC NHẬN XOÁ ============ -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+      <div class="modal-card">
+        <button class="modal-close" type="button" data-close="deleteConfirmModal">×</button>
+        <div class="modal-header">
+          <span class="eyebrow dark">Xác nhận</span>
+          <h3>Xoá món ăn?</h3>
+        </div>
+        <p id="deleteConfirmText" style="color: var(--muted); line-height: 1.7; margin: 0 0 6px;"></p>
+        <div class="admin-modal-actions">
+          <button type="button" class="ghost-btn" data-close="deleteConfirmModal">Huỷ</button>
+          <button type="button" class="primary-btn admin-danger-btn" id="confirmDeleteBtn">Xoá món ăn</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
