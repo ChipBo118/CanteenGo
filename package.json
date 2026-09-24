@@ -1,0 +1,10 @@
+{
+  "name": "canteengo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CanteenGo demo web app for student food ordering",
+  "scripts": {
+    "start": "python -m http.server 8000 --directory public",
+    "dev": "python -m http.server 8000 --directory public"
+  }
+}
