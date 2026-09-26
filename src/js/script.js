@@ -60,6 +60,47 @@ function renderCart() {
   updateCartReopenButton(totalQuantity);
 }
 
+function getDefaultWalletBalance(role) {
+  if (role === 'student') return 180000;
+  if (role === 'teacher') return 260000;
+  return 0;
+}
+
+function getWalletBalance(user) {
+  if (!user) return 0;
+  const value = Number(user.walletBalance ?? getDefaultWalletBalance(user.role));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function updateWalletPaymentUI() {
+  const walletBox = document.getElementById('walletPaymentBox');
+  const walletBalanceHint = document.getElementById('walletBalanceHint');
+  const walletPaymentInfo = document.getElementById('walletPaymentInfo');
+  const walletRadio = document.querySelector('input[name="paymentMethod"][value="Ví CanteenGo"]');
+
+  if (!walletBox || !walletBalanceHint || !walletPaymentInfo || !walletRadio) return;
+
+  const hasWallet = !!currentUser && currentUser.role !== 'guest';
+  const balance = hasWallet ? getWalletBalance(currentUser) : 0;
+
+  walletRadio.disabled = !hasWallet;
+  walletBox.hidden = !hasWallet;
+
+  if (!hasWallet) {
+    walletPaymentInfo.textContent = 'Bạn cần đăng nhập với vai trò sinh viên hoặc giảng viên để sử dụng ví.';
+    walletBalanceHint.textContent = 'Số dư: 0đ';
+    return;
+  }
+
+  walletBalanceHint.textContent = `Số dư: ${formatMoney(balance)}`;
+  walletPaymentInfo.textContent = `Bạn có thể thanh toán tối đa ${formatMoney(balance)} bằng ví CanteenGo.`;
+}
+
+function getSelectedPaymentMethod(form) {
+  const selected = form.querySelector('input[name="paymentMethod"]:checked');
+  return selected ? selected.value : 'Thanh toán khi nhận hàng';
+}
+
 function getOrderHistory() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
@@ -398,7 +439,7 @@ function renderUserDashboard() {
   const phone = currentUser.phone || '-';
   const address = currentUser.address || '-';
   const status = currentUser.role === 'student' ? 'Đang học' : currentUser.role === 'teacher' ? 'Đang giảng dạy' : 'Hoạt động';
-  const wallet = currentUser.role === 'student' ? 180000 : 260000;
+  const wallet = getWalletBalance(currentUser);
 
   const profileNameEl = document.getElementById('profileName');
   const profileEmailEl = document.getElementById('profileEmail');
@@ -582,6 +623,7 @@ function handleLoginFormSubmit(event) {
     identifier: account.email || account.mssv || identifier,
     phone: account.phone || '',
     address: account.address || '',
+    walletBalance: Number(account.walletBalance ?? getDefaultWalletBalance(role)),
   };
   persistCurrentUser(currentUser);
   updateAuthUI();
@@ -638,7 +680,7 @@ loginForm?.addEventListener('submit', handleLoginFormSubmit);
 registerForm?.addEventListener('submit', handleRegisterFormSubmit);
 
 document.getElementById('continueAsGuestBtn')?.addEventListener('click', () => {
-  currentUser = { role: 'guest', name: 'Khách vãng lai', email: null, identifier: null, phone: '', address: '' };
+  currentUser = { role: 'guest', name: 'Khách vãng lai', email: null, identifier: null, phone: '', address: '', walletBalance: 0 };
   persistCurrentUser(currentUser);
   updateAuthUI();
   closeModal('authModal');
@@ -714,9 +756,25 @@ document.querySelector('.checkout-form')?.addEventListener('submit', (event) => 
 
   const form = event.target;
   const address = (form.querySelector('input[type="text"]')?.value || '').trim() || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
-  const paymentMethod = form.querySelector('select')?.value || 'Thanh toán khi nhận hàng';
+  const paymentMethod = getSelectedPaymentMethod(form);
   const subtotal = getCartSubtotal();
   const total = getCartTotal();
+
+  if (paymentMethod === 'Ví CanteenGo') {
+    if (!currentUser || currentUser.role === 'guest') {
+      alert('Khách vãng lai không thể sử dụng ví CanteenGo. Vui lòng chọn phương thức khác.');
+      return;
+    }
+
+    const available = getWalletBalance(currentUser);
+    if (available < total) {
+      alert(`Số dư ví không đủ. Bạn đang có ${formatMoney(available)} nhưng tổng đơn là ${formatMoney(total)}.`);
+      return;
+    }
+
+    currentUser.walletBalance = available - total;
+    persistCurrentUser(currentUser);
+  }
 
   const userEmail = currentUser?.email || currentUser?.identifier || 'guest@canteengo.local';
   const userName = currentUser?.name || 'Khách vãng lai';
@@ -728,6 +786,7 @@ document.querySelector('.checkout-form')?.addEventListener('submit', (event) => 
     customerEmail: userEmail,
     address,
     paymentMethod,
+    paymentStatus: paymentMethod === 'Ví CanteenGo' ? 'Đã thanh toán' : 'Chưa thanh toán',
     items: cart.map((item) => ({ ...item })),
     subtotal,
     shippingFee,
@@ -742,6 +801,7 @@ document.querySelector('.checkout-form')?.addEventListener('submit', (event) => 
   cart.length = 0;
   renderCart();
   if (currentUser) renderUserDashboard();
+  updateWalletPaymentUI();
   closeModal('checkoutModal');
   alert(`Đặt hàng thành công! Mã đơn của bạn là ${newOrder.id}.`);
   form.reset();

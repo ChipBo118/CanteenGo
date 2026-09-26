@@ -530,14 +530,33 @@
             <span>Địa chỉ giao hàng</span>
             <input type="text" value="68 Nguyễn Chí Thanh, Láng, Hà Nội" />
           </label>
+
           <label>
             <span>Phương thức thanh toán</span>
-            <select>
-              <option>Thanh toán khi nhận hàng</option>
-              <option>Ví điện tử</option>
-              <option>Thẻ ngân hàng</option>
-            </select>
+            <div class="payment-options">
+              <label class="payment-option">
+                <input type="radio" name="paymentMethod" value="Thanh toán khi nhận hàng" checked />
+                <span>Thanh toán khi nhận hàng</span>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="paymentMethod" value="Ví CanteenGo" />
+                <span>Ví CanteenGo</span>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="paymentMethod" value="Thẻ ngân hàng" />
+                <span>Thẻ ngân hàng</span>
+              </label>
+            </div>
           </label>
+
+          <div class="wallet-payment-box" id="walletPaymentBox" hidden>
+            <div class="wallet-payment-header">
+              <strong>Ví CanteenGo</strong>
+              <span id="walletBalanceHint">Số dư: 0đ</span>
+            </div>
+            <p id="walletPaymentInfo">Bạn cần đăng nhập với vai trò sinh viên hoặc giảng viên để dùng ví.</p>
+          </div>
+
           <button type="submit" class="primary-btn full-width">Xác nhận đặt hàng</button>
         </form>
       </div>
