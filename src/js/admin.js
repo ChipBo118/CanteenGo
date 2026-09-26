@@ -66,6 +66,7 @@ function renderDashboard() {
   renderBarChart('monthlyChart', report.monthly, (m) => m.label);
   renderMonthlyTable(report.monthly);
   renderItemSalesTable(report.itemSales);
+  renderOrderManagementTable();
   renderMenuTable();
 }
 
@@ -150,6 +151,99 @@ refreshSalesBtn.addEventListener('click', () => {
   resetSalesSeed();
   renderDashboard();
 });
+
+function getAllOrders() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function getOrderStatusClass(status) {
+  switch (status) {
+    case 'Đang xử lý':
+      return 'status-processing';
+    case 'Đang chuẩn bị':
+      return 'status-preparing';
+    case 'Đang giao':
+      return 'status-delivering';
+    case 'Đã giao':
+      return 'status-delivered';
+    case 'Đã hủy':
+      return 'status-cancelled';
+    default:
+      return 'status-processing';
+  }
+}
+
+function renderOrderManagementTable() {
+  const orders = getAllOrders().slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  const table = document.getElementById('orderManagementTable');
+  if (!table) return;
+
+  if (!orders.length) {
+    table.innerHTML = `
+      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Món</th><th>Tổng tiền</th><th>Ngày</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody>
+        <tr><td colspan="7" class="empty-state">Chưa có đơn hàng nào.</td></tr>
+      </tbody>
+    `;
+    return;
+  }
+
+  table.innerHTML = `
+    <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Món</th><th>Tổng tiền</th><th>Ngày</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+    <tbody>
+      ${orders
+        .map((order) => {
+          const itemSummary = order.items && order.items.length ? order.items.map((item) => `${item.name} x${item.quantity}`).join(', ') : 'Không có món';
+          const selectOptions = ORDER_STATUS_FLOW.map(
+            (status) => `<option value="${status}" ${status === order.status ? 'selected' : ''}>${status}</option>`
+          ).join('');
+
+          return `
+            <tr>
+              <td>${order.id}</td>
+              <td>
+                <strong>${order.customerName || 'Khách hàng'}</strong><br>
+                <small>${order.customerEmail || 'guest@canteengo.local'}</small>
+              </td>
+              <td>${itemSummary}</td>
+              <td>${formatCurrency(order.total || 0)}</td>
+              <td>${order.date}</td>
+              <td><span class="status-badge ${getOrderStatusClass(order.status)}">${order.status}</span></td>
+              <td>
+                <select class="status-select" data-order-id="${order.id}">
+                  ${selectOptions}
+                </select>
+              </td>
+            </tr>
+          `;
+        })
+        .join('')}
+    </tbody>
+  `;
+
+  table.querySelectorAll('.status-select').forEach((select) => {
+    select.addEventListener('change', (event) => {
+      const orderId = event.target.dataset.orderId;
+      const nextStatus = event.target.value;
+      updateOrderStatus(orderId, nextStatus);
+    });
+  });
+}
+
+function updateOrderStatus(orderId, nextStatus) {
+  const orders = getAllOrders();
+  const index = orders.findIndex((order) => order.id === orderId);
+  if (index === -1) return;
+
+  orders[index].status = nextStatus;
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  renderDashboard();
+}
 
 // ---------------------------------------------------------------------------
 // Quản lý món ăn: thêm / sửa / xoá

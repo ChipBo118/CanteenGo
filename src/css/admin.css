@@ -211,6 +211,49 @@
   letter-spacing: 0.03em;
 }
 
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+.status-processing {
+  background: rgba(255, 122, 26, 0.1);
+  color: var(--primary-dark);
+}
+
+.status-preparing {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+}
+
+.status-delivering {
+  background: rgba(168, 85, 247, 0.1);
+  color: #7c3aed;
+}
+
+.status-delivered {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.status-select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
 .admin-table-actions {
   display: flex;
   gap: 8px;

@@ -60,6 +60,80 @@ function renderCart() {
   updateCartReopenButton(totalQuantity);
 }
 
+function getOrderHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveOrderHistory(orders) {
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+}
+
+function getCartSubtotal() {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+function getCartTotal() {
+  return getCartSubtotal() + shippingFee;
+}
+
+function openCheckoutModal() {
+  const checkoutSummaryBox = document.querySelector('.checkout-summary-box');
+  const checkoutAddress = document.querySelector('.checkout-form input[type="text"]');
+  const checkoutTotal = document.getElementById('checkoutTotal');
+
+  if (!checkoutSummaryBox) return openModal('checkoutModal');
+
+  if (!cart.length) {
+    checkoutSummaryBox.innerHTML = `
+      <div class="checkout-row">
+        <span>Giỏ hàng đang trống</span>
+        <strong>0đ</strong>
+      </div>
+    `;
+    if (checkoutTotal) checkoutTotal.textContent = '0đ';
+    if (checkoutAddress) checkoutAddress.value = currentUser?.address || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
+    return openModal('checkoutModal');
+  }
+
+  const summaryRows = cart
+    .map(
+      (item) => `
+        <div class="checkout-row">
+          <span>${item.name} × ${item.quantity}</span>
+          <strong>${formatMoney(item.price * item.quantity)}</strong>
+        </div>
+      `
+    )
+    .join('');
+
+  checkoutSummaryBox.innerHTML = `
+    ${summaryRows}
+    <div class="checkout-row total-row">
+      <span>Tạm tính</span>
+      <strong>${formatMoney(getCartSubtotal())}</strong>
+    </div>
+    <div class="checkout-row total-row">
+      <span>Phí giao</span>
+      <strong>${formatMoney(shippingFee)}</strong>
+    </div>
+    <div class="checkout-row total-row highlight-row">
+      <span>Tổng</span>
+      <strong id="checkoutTotal">${formatMoney(getCartTotal())}</strong>
+    </div>
+  `;
+
+  if (checkoutAddress) {
+    checkoutAddress.value = currentUser?.address || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
+  }
+
+  openModal('checkoutModal');
+}
+
 function addToCart(name, price) {
   const existingItem = cart.find((item) => item.name === name);
 
@@ -356,12 +430,32 @@ function renderUserDashboard() {
   if (infoRowPhone) infoRowPhone.textContent = phone;
   if (infoRowAddress) infoRowAddress.textContent = address;
 
-  const rows = [
-    { id: 'CN-2048', date: '14/05/2026', item: 'Combo cơm gà xối mỡ', status: 'Đang giao' },
-    { id: 'CN-2041', date: '11/05/2026', item: 'Phở bò đặc biệt', status: 'Đã nhận' },
-  ];
+  const rows = getOrderHistory()
+    .filter((order) => {
+      if (!currentUser) return false;
+      const email = String(currentUser.email || '').toLowerCase();
+      const userId = String(currentUser.identifier || '').toLowerCase();
+      const owner = String(order.customerEmail || '').toLowerCase();
+      return !owner || owner === email || owner === userId;
+    })
+    .slice(0, 5)
+    .map((order) => ({
+      id: order.id,
+      date: order.date,
+      item: order.items && order.items.length ? order.items.map((item) => `${item.name} x${item.quantity}`).join(', ') : 'Món ăn',
+      status: order.status,
+    }));
 
   if (userOrderTableBodyEl) {
+    if (!rows.length) {
+      userOrderTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="4" class="empty-state">Chưa có đơn hàng.</td>
+        </tr>
+      `;
+      return;
+    }
+
     userOrderTableBodyEl.innerHTML = rows
       .map(
         (order) => `
@@ -426,8 +520,8 @@ loginBtn?.addEventListener('click', () => {
   openModal('authModal');
 });
 
-document.getElementById('orderBtn')?.addEventListener('click', () => openModal('checkoutModal'));
-document.getElementById('checkoutBtn')?.addEventListener('click', () => openModal('checkoutModal'));
+document.getElementById('orderBtn')?.addEventListener('click', () => openCheckoutModal());
+document.getElementById('checkoutBtn')?.addEventListener('click', () => openCheckoutModal());
 
 document.querySelectorAll('.auth-mode-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
@@ -612,8 +706,45 @@ document.querySelectorAll('.modal-overlay').forEach((modal) => {
 
 document.querySelector('.checkout-form')?.addEventListener('submit', (event) => {
   event.preventDefault();
+
+  if (!cart.length) {
+    alert('Giỏ hàng đang trống. Vui lòng chọn món trước khi đặt hàng.');
+    return;
+  }
+
+  const form = event.target;
+  const address = (form.querySelector('input[type="text"]')?.value || '').trim() || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
+  const paymentMethod = form.querySelector('select')?.value || 'Thanh toán khi nhận hàng';
+  const subtotal = getCartSubtotal();
+  const total = getCartTotal();
+
+  const userEmail = currentUser?.email || currentUser?.identifier || 'guest@canteengo.local';
+  const userName = currentUser?.name || 'Khách vãng lai';
+
+  const newOrder = {
+    id: `CN-${Date.now().toString().slice(-6)}`,
+    date: new Date().toLocaleDateString('vi-VN'),
+    customerName: userName,
+    customerEmail: userEmail,
+    address,
+    paymentMethod,
+    items: cart.map((item) => ({ ...item })),
+    subtotal,
+    shippingFee,
+    total,
+    status: 'Đang xử lý',
+  };
+
+  const orders = getOrderHistory();
+  orders.unshift(newOrder);
+  saveOrderHistory(orders);
+
+  cart.length = 0;
+  renderCart();
+  if (currentUser) renderUserDashboard();
   closeModal('checkoutModal');
-  alert('Đặt hàng thành công! Chúng tôi sẽ giao hàng sớm nhất.');
+  alert(`Đặt hàng thành công! Mã đơn của bạn là ${newOrder.id}.`);
+  form.reset();
 });
 
 renderMenu();

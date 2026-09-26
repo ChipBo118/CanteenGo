@@ -8,7 +8,10 @@ const STORAGE_KEYS = {
   MENU: 'canteengo_menu_items',
   SALES_SEED: 'canteengo_sales_seed',
   ADMIN_SESSION: 'canteengo_admin_session',
+  ORDERS: 'canteengo_order_history',
 };
+
+const ORDER_STATUS_FLOW = ['Đang xử lý', 'Đang chuẩn bị', 'Đang giao', 'Đã giao'];
 
 const ADMIN_EMAIL_SUFFIX = '@vwa.edu.vn';
 const STUDENT_EMAIL_SUFFIX = '@hpn.edu.vn';
