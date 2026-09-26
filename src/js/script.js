@@ -215,55 +215,84 @@ document.querySelectorAll('.filter-btn').forEach((button) => {
 });
 
 // ---------------------------------------------------------------------------
-// Đăng nhập theo 3 vai trò: Sinh viên / Giảng viên / Khách vãng lai
+// Đăng nhập / đăng ký theo luồng đơn nhất: tab "Đăng nhập" / "Đăng ký"
+// Hệ thống sẽ tự động xác định vai trò dựa trên đuôi email.
 // ---------------------------------------------------------------------------
 const loginBtn = document.getElementById('loginBtn');
-let currentUser = null; // { role: 'student' | 'teacher' | 'guest', identifier }
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const guestPanel = document.getElementById('guestPanel');
+const userDashboard = document.getElementById('userDashboard');
+const profileForm = document.getElementById('profileForm');
+const CURRENT_USER_STORAGE_KEY = 'canteengo_current_user';
+
+let currentUser = null;
 
 const ROLE_LABELS = {
   student: '🎓',
   teacher: '🧑‍🏫',
+  guest: '👤',
+  admin: '🛡️',
 };
 
-function updateAuthUI() {
-  if (!loginBtn) return;
+const ROLE_DISPLAY = {
+  student: 'Sinh viên',
+  teacher: 'Giảng viên',
+  guest: 'Khách vãng lai',
+  admin: 'Quản trị viên',
+};
 
-  if (currentUser && currentUser.role !== 'guest') {
-    loginBtn.textContent = `${ROLE_LABELS[currentUser.role]} ${currentUser.identifier}`;
-    loginBtn.dataset.mode = 'logout';
-  } else {
-    loginBtn.textContent = 'Đăng nhập';
-    loginBtn.dataset.mode = 'login';
+function loadCurrentUser() {
+  try {
+    const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    return null;
   }
 }
 
-loginBtn?.addEventListener('click', () => {
-  if (loginBtn.dataset.mode === 'logout') {
-    currentUser = null;
-    updateAuthUI();
-    return;
+function persistCurrentUser(user) {
+  if (user) {
+    localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
   }
-  openModal('authModal');
-});
+}
 
-document.getElementById('orderBtn')?.addEventListener('click', () => openModal('checkoutModal'));
-document.getElementById('checkoutBtn')?.addEventListener('click', () => openModal('checkoutModal'));
+function syncCurrentUserToStoredAccounts(user) {
+  if (!user || !user.email) return;
 
-// Chuyển tab vai trò trong modal đăng nhập
-document.querySelectorAll('.role-tab').forEach((tab) => {
-  tab.addEventListener('click', () => {
-    const role = tab.dataset.role;
+  const accounts = getRegisteredAccounts();
+  const index = accounts.findIndex((account) => normalizeEmail(account.email) === normalizeEmail(user.email));
 
-    document.querySelectorAll('.role-tab').forEach((btn) => {
-      btn.classList.toggle('active', btn === tab);
-      btn.setAttribute('aria-selected', btn === tab ? 'true' : 'false');
-    });
+  if (index === -1) return;
 
-    document.querySelectorAll('[data-role-panel]').forEach((panel) => {
-      panel.hidden = panel.dataset.rolePanel !== role;
-    });
+  const updatedAccount = {
+    ...accounts[index],
+    name: user.name || accounts[index].name,
+    email: user.email || accounts[index].email,
+    phone: user.phone || accounts[index].phone || '',
+    address: user.address || accounts[index].address || '',
+  };
+
+  accounts[index] = updatedAccount;
+  saveRegisteredAccounts(accounts);
+}
+
+function showAuthMode(mode) {
+  const tabs = document.querySelectorAll('.auth-mode-tab');
+  const isLoginMode = mode === 'login';
+
+  tabs.forEach((tab) => {
+    const active = tab.dataset.authMode === mode;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active));
   });
-});
+
+  if (loginForm) loginForm.hidden = !isLoginMode;
+  if (registerForm) registerForm.hidden = isLoginMode;
+  if (guestPanel) guestPanel.hidden = !isLoginMode;
+}
 
 function showAuthError(role, message) {
   const errorEl = document.querySelector(`[data-error-for="${role}"]`);
@@ -277,7 +306,136 @@ function hideAuthError(role) {
   if (errorEl) errorEl.hidden = true;
 }
 
-function handleRoleFormSubmit(event, role) {
+function getRoleBadge(role) {
+  const label = ROLE_DISPLAY[role] || ROLE_DISPLAY.guest;
+  return `${ROLE_LABELS[role] || ROLE_LABELS.guest} ${label}`;
+}
+
+function renderUserDashboard() {
+  if (!userDashboard) return;
+
+  if (!currentUser || currentUser.role === 'guest') {
+    userDashboard.hidden = true;
+    return;
+  }
+
+  const fullName = currentUser.name || currentUser.identifier || 'Người dùng';
+  const email = currentUser.email || '-';
+  const phone = currentUser.phone || '-';
+  const address = currentUser.address || '-';
+  const status = currentUser.role === 'student' ? 'Đang học' : currentUser.role === 'teacher' ? 'Đang giảng dạy' : 'Hoạt động';
+  const wallet = currentUser.role === 'student' ? 180000 : 260000;
+
+  const profileNameEl = document.getElementById('profileName');
+  const profileEmailEl = document.getElementById('profileEmail');
+  const profileRoleEl = document.getElementById('profileRole');
+  const profileStatusEl = document.getElementById('profileStatus');
+  const walletBalanceEl = document.getElementById('walletBalance');
+  const userOrderTableBodyEl = document.getElementById('userOrderTableBody');
+
+  if (profileNameEl) profileNameEl.textContent = fullName;
+  if (profileEmailEl) profileEmailEl.textContent = email;
+  if (profileRoleEl) profileRoleEl.textContent = getRoleBadge(currentUser.role);
+  if (profileStatusEl) profileStatusEl.textContent = status;
+  if (walletBalanceEl) walletBalanceEl.textContent = formatMoney(wallet);
+
+  const profileTable = document.querySelector('.profile-table tbody');
+  if (profileTable && profileTable.rows.length >= 4) {
+    const rowName = profileTable.rows[0];
+    const rowEmail = profileTable.rows[1];
+    const rowRole = profileTable.rows[2];
+    const rowStatus = profileTable.rows[3];
+    if (rowName) rowName.cells[1].textContent = fullName;
+    if (rowEmail) rowEmail.cells[1].textContent = email;
+    if (rowRole) rowRole.cells[1].textContent = getRoleBadge(currentUser.role);
+    if (rowStatus) rowStatus.cells[1].textContent = status;
+  }
+
+  const infoRowPhone = document.getElementById('profilePhone');
+  const infoRowAddress = document.getElementById('profileAddress');
+  if (infoRowPhone) infoRowPhone.textContent = phone;
+  if (infoRowAddress) infoRowAddress.textContent = address;
+
+  const rows = [
+    { id: 'CN-2048', date: '14/05/2026', item: 'Combo cơm gà xối mỡ', status: 'Đang giao' },
+    { id: 'CN-2041', date: '11/05/2026', item: 'Phở bò đặc biệt', status: 'Đã nhận' },
+  ];
+
+  if (userOrderTableBodyEl) {
+    userOrderTableBodyEl.innerHTML = rows
+      .map(
+        (order) => `
+          <tr>
+            <td>${order.id}</td>
+            <td>${order.date}</td>
+            <td>${order.item}</td>
+            <td>${order.status}</td>
+          </tr>
+        `
+      )
+      .join('');
+  }
+
+  userDashboard.hidden = false;
+}
+
+function updateAuthUI() {
+  if (!loginBtn) return;
+
+  if (currentUser && currentUser.role !== 'guest') {
+    const displayName = currentUser.name || currentUser.email || currentUser.identifier || 'Tài khoản';
+    loginBtn.textContent = `${ROLE_LABELS[currentUser.role]} ${displayName}`;
+    loginBtn.dataset.mode = 'logout';
+    renderUserDashboard();
+  } else if (currentUser && currentUser.role === 'guest') {
+    loginBtn.textContent = 'Khách vãng lai';
+    loginBtn.dataset.mode = 'logout';
+    userDashboard.hidden = true;
+  } else {
+    loginBtn.textContent = 'Đăng nhập';
+    loginBtn.dataset.mode = 'login';
+    if (userDashboard) userDashboard.hidden = true;
+  }
+}
+
+function populateProfileForm() {
+  if (!profileForm || !currentUser) return;
+  profileForm.profileName.value = currentUser.name || '';
+  profileForm.profilePhone.value = currentUser.phone || '';
+  profileForm.profileAddress.value = currentUser.address || '';
+}
+
+function openProfileEditor() {
+  if (!currentUser) return;
+  populateProfileForm();
+  openModal('profileModal');
+}
+
+function handleLogout() {
+  currentUser = null;
+  persistCurrentUser(null);
+  closeModal('profileModal');
+  updateAuthUI();
+}
+
+loginBtn?.addEventListener('click', () => {
+  if (loginBtn.dataset.mode === 'logout') {
+    openProfileEditor();
+    return;
+  }
+  openModal('authModal');
+});
+
+document.getElementById('orderBtn')?.addEventListener('click', () => openModal('checkoutModal'));
+document.getElementById('checkoutBtn')?.addEventListener('click', () => openModal('checkoutModal'));
+
+document.querySelectorAll('.auth-mode-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    showAuthMode(tab.dataset.authMode);
+  });
+});
+
+function handleLoginFormSubmit(event) {
   event.preventDefault();
 
   const form = event.target;
@@ -285,101 +443,162 @@ function handleRoleFormSubmit(event, role) {
   const password = form.password.value.trim();
 
   if (!identifier || !password) {
-    showAuthError(role, 'Vui lòng nhập đầy đủ thông tin đăng nhập.');
+    showAuthError('login', 'Vui lòng nhập đầy đủ email/MSSV và mật khẩu.');
     return;
   }
 
-  if (role === 'teacher' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
-    showAuthError(role, 'Email giảng viên không hợp lệ.');
+  const normalizedIdentifier = normalizeEmail(identifier);
+  const inferredRole = classifyEmailRole(normalizedIdentifier);
+  const adminMatch = findAdminAccount(identifier, password);
+
+  if (adminMatch) {
+    hideAuthError('login');
+    setAdminSession(adminMatch.email);
+    form.reset();
+    closeModal('authModal');
+    window.location.href = 'admin.html';
     return;
   }
 
-  if (password.length < 6) {
-    showAuthError(role, 'Mật khẩu phải có ít nhất 6 ký tự.');
-    return;
+  let role = inferredRole === 'teacher' ? 'teacher' : inferredRole === 'student' ? 'student' : 'guest';
+  let account = null;
+
+  if (role === 'student') {
+    account = findStudentAccount(identifier, password);
   }
 
-  const account = role === 'teacher' ? findTeacherAccount(identifier, password) : findStudentAccount(identifier, password);
+  if (role === 'teacher') {
+    account = findTeacherAccount(identifier, password);
+  }
+
+  if (role === 'guest') {
+    account = findGuestAccount(identifier, password);
+  }
 
   if (!account) {
-    showAuthError(role, 'Tài khoản hoặc mật khẩu không chính xác. Xem tài khoản demo bên dưới.');
+    showAuthError('login', 'Tài khoản hoặc mật khẩu không chính xác. Vui lòng dùng tài khoản demo hoặc email đã đăng ký hợp lệ.');
     return;
   }
 
-  hideAuthError(role);
-  currentUser = { role, identifier: account.name };
+  hideAuthError('login');
+  currentUser = {
+    role,
+    name: account.name,
+    email: account.email || normalizedIdentifier,
+    identifier: account.email || account.mssv || identifier,
+    phone: account.phone || '',
+    address: account.address || '',
+  };
+  persistCurrentUser(currentUser);
   updateAuthUI();
   form.reset();
   closeModal('authModal');
 }
 
-document
-  .querySelector('form[data-role-panel="student"]')
-  ?.addEventListener('submit', (event) => handleRoleFormSubmit(event, 'student'));
+function handleRegisterFormSubmit(event) {
+  event.preventDefault();
 
-document
-  .querySelector('form[data-role-panel="teacher"]')
-  ?.addEventListener('submit', (event) => handleRoleFormSubmit(event, 'teacher'));
+  const form = event.target;
+  const name = form.fullName.value.trim();
+  const email = form.registerEmail.value.trim();
+  const password = form.registerPassword.value.trim();
+  const errorEl = form.querySelector('[data-error-for="register"]');
+
+  if (!name || !email || !password) {
+    if (errorEl) {
+      errorEl.textContent = 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu.';
+      errorEl.hidden = false;
+    }
+    return;
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const inferredRole = classifyEmailRole(normalizedEmail);
+
+  if (inferredRole === 'admin') {
+    if (errorEl) {
+      errorEl.textContent = 'Admin không được tự đăng ký. Vui lòng dùng email khác.';
+      errorEl.hidden = false;
+    }
+    return;
+  }
+
+  const roleToRegister = inferredRole === 'student' || inferredRole === 'teacher' ? inferredRole : 'guest';
+  const result = registerDemoAccount({ name, email, password, role: roleToRegister });
+  if (!result.ok) {
+    if (errorEl) {
+      errorEl.textContent = result.message;
+      errorEl.hidden = false;
+    }
+    return;
+  }
+
+  if (errorEl) errorEl.hidden = true;
+  form.reset();
+  if (loginForm && loginForm.identifier) loginForm.identifier.value = result.account.email;
+  showAuthMode('login');
+  alert('Tài khoản đã được tạo thành công. Bạn có thể đăng nhập ngay bằng email vừa đăng ký.');
+}
+
+loginForm?.addEventListener('submit', handleLoginFormSubmit);
+registerForm?.addEventListener('submit', handleRegisterFormSubmit);
 
 document.getElementById('continueAsGuestBtn')?.addEventListener('click', () => {
-  currentUser = { role: 'guest', identifier: null };
+  currentUser = { role: 'guest', name: 'Khách vãng lai', email: null, identifier: null, phone: '', address: '' };
+  persistCurrentUser(currentUser);
   updateAuthUI();
   closeModal('authModal');
 });
 
-// ---------------------------------------------------------------------------
-// Đăng nhập quản trị ngay trong modal của trang chính. Đăng nhập thành công sẽ
-// mở phiên quản trị rồi chuyển hẳn sang trang dashboard riêng (admin.html) —
-// trang đó chỉ hiển thị cho ai có phiên quản trị hợp lệ.
-// ---------------------------------------------------------------------------
-function handleAdminFormSubmit(event) {
+profileForm?.addEventListener('submit', (event) => {
   event.preventDefault();
+  if (!currentUser) return;
 
   const form = event.target;
-  const identifier = form.identifier.value.trim();
-  const password = form.password.value.trim();
+  const name = form.profileName.value.trim();
+  const phone = form.profilePhone.value.trim();
+  const address = form.profileAddress.value.trim();
 
-  if (!identifier || !password) {
-    showAuthError('admin', 'Vui lòng nhập đầy đủ email và mật khẩu quản trị.');
+  if (!name) {
+    alert('Vui lòng nhập họ và tên.');
     return;
   }
 
-  if (!isValidAdminEmail(identifier)) {
-    showAuthError('admin', 'Chỉ tài khoản có đuôi @vwa.edu.vn mới được truy cập trang quản trị.');
-    return;
-  }
+  currentUser = {
+    ...currentUser,
+    name,
+    phone,
+    address,
+  };
 
-  const account = findAdminAccount(identifier, password);
-  if (!account) {
-    showAuthError('admin', 'Email hoặc mật khẩu không chính xác. Xem tài khoản demo bên dưới.');
-    return;
-  }
+  syncCurrentUserToStoredAccounts(currentUser);
+  persistCurrentUser(currentUser);
+  updateAuthUI();
+  renderUserDashboard();
+  closeModal('profileModal');
+  alert('Cập nhật thông tin tài khoản thành công!');
+});
 
-  hideAuthError('admin');
-  setAdminSession(account.email);
-  form.reset();
-  window.location.href = 'admin.html';
-}
+document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
 
-document
-  .querySelector('form[data-role-panel="admin"]')
-  ?.addEventListener('submit', handleAdminFormSubmit);
-
-// Nếu bị admin.html chuyển ngược lại (chưa đăng nhập quản trị), tự mở modal
-// sẵn ở tab "Quản trị" kèm thông báo, thay vì để người dùng phải tự tìm nút.
-(function handleAdminRedirectNotice() {
+function handleAdminRedirectNotice() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('admin') !== 'required') return;
 
   openModal('authModal');
-  document.querySelector('.role-tab[data-role="admin"]')?.click();
-  showAuthError('admin', 'Vui lòng đăng nhập bằng tài khoản quản trị để tiếp tục.');
+  showAuthMode('login');
+  showAuthError('login', 'Vui lòng đăng nhập bằng tài khoản quản trị để tiếp tục.');
 
   params.delete('admin');
   const query = params.toString();
   const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
   window.history.replaceState({}, '', newUrl);
-})();
+}
+
+currentUser = loadCurrentUser();
+showAuthMode('login');
+updateAuthUI();
+handleAdminRedirectNotice();
 
 document.querySelectorAll('[data-close]').forEach((button) => {
   button.addEventListener('click', () => closeModal(button.dataset.close));

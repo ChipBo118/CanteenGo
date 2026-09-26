@@ -11,6 +11,9 @@ const STORAGE_KEYS = {
 };
 
 const ADMIN_EMAIL_SUFFIX = '@vwa.edu.vn';
+const STUDENT_EMAIL_SUFFIX = '@hpn.edu.vn';
+const TEACHER_EMAIL_SUFFIX = '@hvpnvn.edu.vn';
+const DEMO_ACCOUNTS_STORAGE_KEY = 'canteengo_demo_accounts';
 
 const DEFAULT_MENU_ITEMS = [
   { id: 1, name: 'Phở bò đặc biệt', price: 45000, category: 'popular', tagLabel: 'Phổ biến', tagClass: '', rating: 4.9, kcal: 650, time: 20, image: 'image-one', imageUrl: '', description: 'Phở bò thơm, nước dùng đậm vị, hành ngò tươi.' },
@@ -126,29 +129,111 @@ function formatCurrency(value) {
 // ---------------------------------------------------------------------------
 const DEMO_ACCOUNTS = {
   student: [
-    { mssv: 'SV2024001', email: 'thao.nguyen@student.edu.vn', password: 'sv123456', name: 'Nguyễn Thảo' },
-    { mssv: 'SV2024002', email: 'linh.anh@student.edu.vn', password: 'sv123456', name: 'Linh Anh' },
+    { mssv: 'SV2024001', email: 'thao.nguyen@hpn.edu.vn', password: 'sv123456', name: 'Nguyễn Thảo' },
+    { mssv: 'SV2024002', email: 'linh.anh@hpn.edu.vn', password: 'sv123456', name: 'Linh Anh' },
   ],
   teacher: [
-    { email: 'ha.minh@edu.vn', password: 'gv123456', name: 'Hà Minh' },
+    { email: 'ha.minh@hvpnvn.edu.vn', password: 'gv123456', name: 'Hà Minh' },
   ],
   admin: [
     { email: 'admin@vwa.edu.vn', password: 'Admin@123', name: 'Quản trị viên VWA' },
   ],
 };
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function classifyEmailRole(email) {
+  const normalized = normalizeEmail(email);
+
+  if (!normalized || !normalized.includes('@')) return 'guest';
+  if (normalized.endsWith(ADMIN_EMAIL_SUFFIX)) return 'admin';
+  if (normalized.endsWith(TEACHER_EMAIL_SUFFIX)) return 'teacher';
+  if (normalized.endsWith(STUDENT_EMAIL_SUFFIX)) return 'student';
+  return 'guest';
+}
+
+function getRegisteredAccounts() {
+  const raw = localStorage.getItem(DEMO_ACCOUNTS_STORAGE_KEY);
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveRegisteredAccounts(accounts) {
+  localStorage.setItem(DEMO_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
+}
+
+function registerDemoAccount({ name, email, password, role }) {
+  const normalizedEmail = normalizeEmail(email);
+  const trimmedName = String(name || '').trim();
+  const trimmedPassword = String(password || '').trim();
+
+  if (!trimmedName || !normalizedEmail || !trimmedPassword) {
+    return { ok: false, message: 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu.' };
+  }
+
+  if (!normalizedEmail.includes('@')) {
+    return { ok: false, message: 'Email không hợp lệ.' };
+  }
+
+  if (trimmedPassword.length < 6) {
+    return { ok: false, message: 'Mật khẩu phải có ít nhất 6 ký tự.' };
+  }
+
+  if (role === 'student' && !normalizedEmail.endsWith(STUDENT_EMAIL_SUFFIX)) {
+    return { ok: false, message: 'Sinh viên phải sử dụng email có đuôi @hpn.edu.vn.' };
+  }
+
+  if (role === 'teacher' && !normalizedEmail.endsWith(TEACHER_EMAIL_SUFFIX)) {
+    return { ok: false, message: 'Giảng viên phải sử dụng email có đuôi @hvpnvn.edu.vn.' };
+  }
+
+  if (role === 'admin') {
+    return { ok: false, message: 'Tài khoản quản trị không được tự đăng ký. Chỉ admin hệ thống mới được cấp quyền.' };
+  }
+
+  if (role === 'guest' && normalizedEmail.endsWith(ADMIN_EMAIL_SUFFIX)) {
+    return { ok: false, message: 'Admin không được tự đăng ký. Vui lòng dùng email khác.' };
+  }
+
+  const accounts = getRegisteredAccounts();
+  if (accounts.some((acc) => acc.email.toLowerCase() === normalizedEmail)) {
+    return { ok: false, message: 'Email này đã được đăng ký trước đó.' };
+  }
+
+  const account = { name: trimmedName, email: normalizedEmail, password: trimmedPassword, role, phone: '', address: '' };
+  accounts.push(account);
+  saveRegisteredAccounts(accounts);
+  return { ok: true, account };
+}
+
 function findStudentAccount(identifier, password) {
   const norm = String(identifier || '').trim().toLowerCase();
+  const all = [...DEMO_ACCOUNTS.student, ...getRegisteredAccounts().filter((acc) => acc.role === 'student')];
   return (
-    DEMO_ACCOUNTS.student.find(
-      (acc) => (acc.mssv.toLowerCase() === norm || acc.email.toLowerCase() === norm) && acc.password === password
+    all.find(
+      (acc) => ((acc.mssv && acc.mssv.toLowerCase() === norm) || (acc.email && acc.email.toLowerCase() === norm)) && acc.password === password
     ) || null
   );
 }
 
 function findTeacherAccount(identifier, password) {
   const norm = String(identifier || '').trim().toLowerCase();
-  return DEMO_ACCOUNTS.teacher.find((acc) => acc.email.toLowerCase() === norm && acc.password === password) || null;
+  const all = [...DEMO_ACCOUNTS.teacher, ...getRegisteredAccounts().filter((acc) => acc.role === 'teacher')];
+  return all.find((acc) => acc.email.toLowerCase() === norm && acc.password === password) || null;
+}
+
+function findGuestAccount(identifier, password) {
+  const norm = String(identifier || '').trim().toLowerCase();
+  const all = getRegisteredAccounts().filter((acc) => acc.role === 'guest');
+  return all.find((acc) => acc.email.toLowerCase() === norm && acc.password === password) || null;
 }
 
 function findAdminAccount(identifier, password) {
@@ -160,7 +245,7 @@ function findAdminAccount(identifier, password) {
 // Đăng nhập quản trị — chỉ chấp nhận email đuôi @vwa.edu.vn (mô phỏng, không có backend thật)
 // ---------------------------------------------------------------------------
 function isValidAdminEmail(email) {
-  const normalized = String(email || '').trim().toLowerCase();
+  const normalized = normalizeEmail(email);
   return normalized.endsWith(ADMIN_EMAIL_SUFFIX) && normalized.length > ADMIN_EMAIL_SUFFIX.length;
 }
 

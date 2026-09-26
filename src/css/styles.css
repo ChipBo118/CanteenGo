@@ -473,6 +473,88 @@ button {
   gap: 22px;
 }
 
+.user-dashboard {
+  padding-top: 48px;
+}
+
+.account-layout,
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.account-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 1.4rem 1.2rem;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.account-card h3 {
+  margin: 0 0 16px;
+  font-size: 1.4rem;
+  letter-spacing: -0.04em;
+}
+
+.profile-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.profile-table th,
+.profile-table td {
+  padding: 0.8rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.profile-table th {
+  width: 35%;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.profile-table td {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.wallet-box {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  min-height: 120px;
+  background: linear-gradient(135deg, rgba(255, 122, 26, 0.08), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(255, 122, 26, 0.1);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+}
+
+.wallet-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wallet-box strong {
+  font-size: clamp(1.8rem, 2vw, 2.4rem);
+  letter-spacing: -0.05em;
+}
+
+.feedback-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 .menu-card,
 .process-card,
 .store-card,
@@ -772,6 +854,7 @@ button {
   font-weight: 600;
 }
 
+.auth-mode-tabs,
 .role-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -782,21 +865,23 @@ button {
   margin-bottom: 1.1rem;
 }
 
+.auth-mode-tab,
 .role-tab {
   flex: 1 1 auto;
   min-width: 108px;
   border: none;
   background: transparent;
-  padding: 0.6rem 0.5rem;
+  padding: 0.7rem 0.9rem;
   border-radius: 10px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted, #6b6b6b);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted, #6b6b6b);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
 }
 
+.auth-mode-tab.active,
 .role-tab.active {
   background: #fff;
   color: var(--primary-dark, #d9480f);
@@ -1104,6 +1189,18 @@ button {
   margin: 0;
   text-align: center;
   color: var(--muted);
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-actions .primary-btn,
+.profile-actions .secondary-btn {
+  flex: 1;
 }
 
 .switch-copy a {

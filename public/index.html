@@ -226,6 +226,87 @@
         </section>
       </main>
 
+      <section class="container user-dashboard" id="userDashboard" hidden>
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow dark">Tài khoản</span>
+            <h2>US05 - Thông tin tài khoản & đơn hàng</h2>
+          </div>
+        </div>
+
+        <div class="account-layout">
+          <div class="account-card">
+            <h3>US04 - Thông tin cá nhân</h3>
+            <table class="profile-table">
+              <tbody>
+                <tr>
+                  <th>Họ tên</th>
+                  <td id="profileName">-</td>
+                </tr>
+                <tr>
+                  <th>Email</th>
+                  <td id="profileEmail">-</td>
+                </tr>
+                <tr>
+                  <th>Vai trò</th>
+                  <td id="profileRole">-</td>
+                </tr>
+                <tr>
+                  <th>Trạng thái</th>
+                  <td id="profileStatus">-</td>
+                </tr>
+                <tr>
+                  <th>Số điện thoại</th>
+                  <td id="profilePhone">-</td>
+                </tr>
+                <tr>
+                  <th>Địa chỉ</th>
+                  <td id="profileAddress">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="account-card">
+            <h3>US05 - Bảng thông tin & trạng thái</h3>
+            <table class="profile-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Ngày</th>
+                  <th>Món</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="userOrderTableBody">
+                <tr>
+                  <td colspan="4" class="empty-state">Chưa có đơn hàng.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="account-grid">
+          <div class="account-card">
+            <h3>US07 - Ví CanteenGo</h3>
+            <div class="wallet-box">
+              <span class="wallet-label">Số dư hiện tại</span>
+              <strong id="walletBalance">0đ</strong>
+            </div>
+          </div>
+
+          <div class="account-card">
+            <h3>US08 - Đánh giá & phản hồi</h3>
+            <ul class="feedback-list" id="feedbackList">
+              <li>Đánh giá món sau khi nhận hàng.</li>
+              <li>Nhận thông báo trạng thái đơn hàng.</li>
+              <li>Gửi phản hồi khi đơn bị hủy hoặc chậm.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <footer class="footer">
         <div class="container footer-grid">
           <div>
@@ -327,58 +408,53 @@
           <h3>Đăng nhập CanteenGo</h3>
         </div>
 
-        <div class="role-tabs" role="tablist" aria-label="Chọn vai trò đăng nhập">
-          <button type="button" class="role-tab active" data-role="student" role="tab" aria-selected="true">
-            🎓 Sinh viên
+        <div class="auth-mode-tabs" role="tablist" aria-label="Chọn chế độ đăng nhập">
+          <button type="button" class="auth-mode-tab active" data-auth-mode="login" role="tab" aria-selected="true">
+            Đăng nhập
           </button>
-          <button type="button" class="role-tab" data-role="teacher" role="tab" aria-selected="false">
-            🧑‍🏫 Giảng viên
-          </button>
-          <button type="button" class="role-tab" data-role="guest" role="tab" aria-selected="false">
-            🚶 Khách vãng lai
-          </button>
-          <button type="button" class="role-tab" data-role="admin" role="tab" aria-selected="false">
-            🛠️ Quản trị
+          <button type="button" class="auth-mode-tab" data-auth-mode="register" role="tab" aria-selected="false">
+            Đăng ký
           </button>
         </div>
 
-        <form class="auth-form" data-role-panel="student">
+        <form class="auth-form" id="loginForm">
           <label>
-            <span>MSSV hoặc email sinh viên</span>
-            <input type="text" name="identifier" placeholder="MSSV hoặc ten@student.edu.vn" required />
+            <span>Email hoặc MSSV</span>
+            <input type="text" name="identifier" placeholder="ten@hpn.edu.vn hoặc SV2024001" required />
           </label>
           <label>
             <span>Mật khẩu</span>
             <input type="password" name="password" placeholder="••••••••" minlength="6" required />
           </label>
-          <p class="auth-error" data-error-for="student" hidden></p>
+          <p class="auth-error" data-error-for="login" hidden></p>
           <button type="submit" class="primary-btn full-width">Đăng nhập</button>
-          <p class="switch-copy">Chưa có tài khoản? <a href="#">Đăng ký ngay</a></p>
           <div class="demo-hint">
             <strong>Tài khoản demo</strong>
-            <span>MSSV <code>SV2024001</code> · mật khẩu <code>sv123456</code></span>
-            <span>MSSV <code>SV2024002</code> · mật khẩu <code>sv123456</code></span>
+            <span><code>thao.nguyen@hpn.edu.vn</code> · mật khẩu <code>sv123456</code></span>
+            <span><code>ha.minh@hvpnvn.edu.vn</code> · mật khẩu <code>gv123456</code></span>
+            <span><code>admin@vwa.edu.vn</code> · mật khẩu <code>Admin@123</code></span>
           </div>
         </form>
 
-        <form class="auth-form" data-role-panel="teacher" hidden>
+        <form class="auth-form" id="registerForm" hidden>
           <label>
-            <span>Email giảng viên</span>
-            <input type="email" name="identifier" placeholder="ten.giangvien@edu.vn" required />
+            <span>Họ và tên</span>
+            <input type="text" name="fullName" placeholder="Nguyễn Văn A" required />
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" name="registerEmail" placeholder="example@hpn.edu.vn" required />
           </label>
           <label>
             <span>Mật khẩu</span>
-            <input type="password" name="password" placeholder="••••••••" minlength="6" required />
+            <input type="password" name="registerPassword" placeholder="••••••••" minlength="6" required />
           </label>
-          <p class="auth-error" data-error-for="teacher" hidden></p>
-          <button type="submit" class="primary-btn full-width">Đăng nhập</button>
-          <div class="demo-hint">
-            <strong>Tài khoản demo</strong>
-            <span><code>ha.minh@edu.vn</code> · mật khẩu <code>gv123456</code></span>
-          </div>
+          <p class="auth-error" data-error-for="register" hidden></p>
+          <button type="submit" class="primary-btn full-width">Tạo tài khoản</button>
+          <p class="switch-copy">Hệ thống sẽ tự động phân vai trò theo email. Admin chỉ được cấp bởi hệ thống.</p>
         </form>
 
-        <div class="auth-guest-panel" data-role-panel="guest" hidden>
+        <div class="auth-guest-panel" id="guestPanel" hidden>
           <p>
             Bạn có thể xem menu và đặt món ngay mà không cần tài khoản. Một số ưu đãi
             dành riêng cho sinh viên/giảng viên sẽ không được áp dụng cho đơn hàng này.
@@ -388,21 +464,39 @@
           </button>
         </div>
 
-        <form class="auth-form" data-role-panel="admin" hidden>
+        <div class="demo-hint admin-note">
+          <strong>Quy tắc quyền</strong>
+          <span>SV: <code>@hpn.edu.vn</code></span>
+          <span>GV: <code>@hvpnvn.edu.vn</code></span>
+          <span>Admin: <code>@vwa.edu.vn</code></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="profileModal">
+      <div class="modal-card">
+        <button class="modal-close" type="button" data-close="profileModal">×</button>
+        <div class="modal-header">
+          <span class="eyebrow dark">Tài khoản</span>
+          <h3>Cập nhật thông tin</h3>
+        </div>
+
+        <form class="auth-form" id="profileForm">
           <label>
-            <span>Email quản trị (@vwa.edu.vn)</span>
-            <input type="email" name="identifier" placeholder="ten@vwa.edu.vn" required />
+            <span>Họ và tên</span>
+            <input type="text" name="profileName" placeholder="Nguyễn Văn A" required />
           </label>
           <label>
-            <span>Mật khẩu</span>
-            <input type="password" name="password" placeholder="••••••••" minlength="6" required />
+            <span>Số điện thoại</span>
+            <input type="tel" name="profilePhone" placeholder="0901 234 567" />
           </label>
-          <p class="auth-error" data-error-for="admin" hidden></p>
-          <button type="submit" class="primary-btn full-width">Đăng nhập quản trị</button>
-          <p class="switch-copy admin-form-note">Đăng nhập thành công sẽ chuyển sang trang quản trị riêng.</p>
-          <div class="demo-hint">
-            <strong>Tài khoản demo</strong>
-            <span><code>admin@vwa.edu.vn</code> · mật khẩu <code>Admin@123</code></span>
+          <label>
+            <span>Địa chỉ</span>
+            <textarea name="profileAddress" rows="3" placeholder="Số nhà, đường, phường, quận..."></textarea>
+          </label>
+          <div class="profile-actions">
+            <button type="button" class="secondary-btn" id="logoutBtn">Đăng xuất</button>
+            <button type="submit" class="primary-btn">Cập nhật thông tin</button>
           </div>
         </form>
       </div>
