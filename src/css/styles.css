@@ -485,11 +485,15 @@ button {
   margin-top: 20px;
 }
 
+.account-layout-large {
+  grid-template-columns: 1.15fr 1.5fr;
+}
+
 .account-card {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--border);
   border-radius: 24px;
-  padding: 1.4rem 1.2rem;
+  padding: 1.7rem 1.4rem;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
 
@@ -553,6 +557,73 @@ button {
   padding-left: 1.2rem;
   color: var(--muted);
   line-height: 1.7;
+}
+
+.account-editor-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-editor-tab {
+  flex: 1;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 12px 12px 0 0;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-editor-tab.active {
+  background: rgba(255, 122, 26, 0.08);
+  color: var(--primary-dark);
+  border-color: rgba(255, 122, 26, 0.12);
+}
+
+.account-editor-panel {
+  display: none;
+}
+
+.account-editor-panel.active {
+  display: block;
+}
+
+.account-order-table th,
+.account-order-table td {
+  font-size: 0.8rem;
+}
+
+.cancel-order-btn,
+.order-action-disabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0.38rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.cancel-order-btn {
+  border: 1px solid rgba(214, 69, 69, 0.2);
+  background: rgba(214, 69, 69, 0.06);
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.order-action-disabled {
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.account-modal-card {
+  width: min(760px, 100%);
 }
 
 .menu-card,

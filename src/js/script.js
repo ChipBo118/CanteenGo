@@ -127,6 +127,12 @@ function openCheckoutModal() {
   const checkoutAddress = document.querySelector('.checkout-form input[type="text"]');
   const checkoutTotal = document.getElementById('checkoutTotal');
 
+  if (currentUser && !String(currentUser.address || '').trim()) {
+    alert('Vui lòng cập nhật địa chỉ giao hàng trong thông tin tài khoản trước khi đặt hàng.');
+    openProfileEditor();
+    return;
+  }
+
   if (!checkoutSummaryBox) return openModal('checkoutModal');
 
   if (!cart.length) {
@@ -137,7 +143,7 @@ function openCheckoutModal() {
       </div>
     `;
     if (checkoutTotal) checkoutTotal.textContent = '0đ';
-    if (checkoutAddress) checkoutAddress.value = currentUser?.address || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
+    if (checkoutAddress) checkoutAddress.value = currentUser?.address || '';
     return openModal('checkoutModal');
   }
 
@@ -169,7 +175,7 @@ function openCheckoutModal() {
   `;
 
   if (checkoutAddress) {
-    checkoutAddress.value = currentUser?.address || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
+    checkoutAddress.value = currentUser?.address || '';
   }
 
   openModal('checkoutModal');
@@ -426,6 +432,28 @@ function getRoleBadge(role) {
   return `${ROLE_LABELS[role] || ROLE_LABELS.guest} ${label}`;
 }
 
+function getUserOrderRows() {
+  if (!currentUser) return [];
+
+  const email = String(currentUser.email || '').toLowerCase();
+  const userId = String(currentUser.identifier || '').toLowerCase();
+
+  return getOrderHistory()
+    .filter((order) => {
+      const owner = String(order.customerEmail || '').toLowerCase();
+      return !owner || owner === email || owner === userId;
+    })
+    .slice(0, 10)
+    .map((order) => ({
+      id: order.id,
+      date: order.date,
+      item: order.items && order.items.length ? order.items.map((item) => `${item.name} x${item.quantity}`).join(', ') : 'Món ăn',
+      status: order.status,
+      total: order.total || order.subtotal || 0,
+      canCancel: order.status === 'Đang xử lý',
+    }));
+}
+
 function renderUserDashboard() {
   if (!userDashboard) return;
 
@@ -471,46 +499,35 @@ function renderUserDashboard() {
   if (infoRowPhone) infoRowPhone.textContent = phone;
   if (infoRowAddress) infoRowAddress.textContent = address;
 
-  const rows = getOrderHistory()
-    .filter((order) => {
-      if (!currentUser) return false;
-      const email = String(currentUser.email || '').toLowerCase();
-      const userId = String(currentUser.identifier || '').toLowerCase();
-      const owner = String(order.customerEmail || '').toLowerCase();
-      return !owner || owner === email || owner === userId;
-    })
-    .slice(0, 5)
-    .map((order) => ({
-      id: order.id,
-      date: order.date,
-      item: order.items && order.items.length ? order.items.map((item) => `${item.name} x${item.quantity}`).join(', ') : 'Món ăn',
-      status: order.status,
-    }));
+  const rows = getUserOrderRows();
 
   if (userOrderTableBodyEl) {
     if (!rows.length) {
       userOrderTableBodyEl.innerHTML = `
         <tr>
-          <td colspan="4" class="empty-state">Chưa có đơn hàng.</td>
+          <td colspan="5" class="empty-state">Chưa có đơn hàng.</td>
         </tr>
       `;
-      return;
+    } else {
+      userOrderTableBodyEl.innerHTML = rows
+        .map(
+          (order) => `
+            <tr>
+              <td>${order.id}</td>
+              <td>${order.date}</td>
+              <td>${order.item}</td>
+              <td>${order.status}</td>
+              <td>
+                ${order.canCancel ? `<button type="button" class="cancel-order-btn" data-cancel-order-id="${order.id}">Hủy đơn</button>` : '<span class="order-action-disabled">-</span>'}
+              </td>
+            </tr>
+          `
+        )
+        .join('');
     }
-
-    userOrderTableBodyEl.innerHTML = rows
-      .map(
-        (order) => `
-          <tr>
-            <td>${order.id}</td>
-            <td>${order.date}</td>
-            <td>${order.item}</td>
-            <td>${order.status}</td>
-          </tr>
-        `
-      )
-      .join('');
   }
 
+  renderAccountOrdersTab();
   userDashboard.hidden = false;
 }
 
@@ -536,13 +553,92 @@ function updateAuthUI() {
 function populateProfileForm() {
   if (!profileForm || !currentUser) return;
   profileForm.profileName.value = currentUser.name || '';
+  profileForm.profileRole.value = ROLE_DISPLAY[currentUser.role] || ROLE_DISPLAY.guest;
   profileForm.profilePhone.value = currentUser.phone || '';
   profileForm.profileAddress.value = currentUser.address || '';
+}
+
+function switchAccountEditorTab(tabName) {
+  const buttons = document.querySelectorAll('.account-editor-tab');
+  const panels = document.querySelectorAll('.account-editor-panel');
+
+  buttons.forEach((button) => {
+    const active = button.dataset.accountTab === tabName;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+
+  panels.forEach((panel) => {
+    const active = panel.id === (tabName === 'orders' ? 'accountOrdersPanel' : 'accountInfoPanel');
+    panel.classList.toggle('active', active);
+  });
+}
+
+function renderAccountOrdersTab() {
+  const tableBody = document.getElementById('profileOrdersTableBody');
+  if (!tableBody) return;
+
+  const rows = getUserOrderRows();
+
+  if (!rows.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty-state">Chưa có đơn hàng nào.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = rows
+    .map(
+      (order) => `
+        <tr>
+          <td>${order.id}</td>
+          <td>${order.date}</td>
+          <td>${order.status}</td>
+          <td>${formatMoney(order.total)}</td>
+          <td>
+            ${order.canCancel ? `<button type="button" class="cancel-order-btn" data-cancel-order-id="${order.id}">Hủy đơn</button>` : '<span class="order-action-disabled">Không thể</span>'}
+          </td>
+        </tr>
+      `
+    )
+    .join('');
+}
+
+function cancelOrder(orderId) {
+  const orders = getOrderHistory();
+  const index = orders.findIndex((order) => order.id === orderId);
+  if (index === -1) return;
+
+  const order = orders[index];
+  if (order.status !== 'Đang xử lý') {
+    alert('Chỉ đơn hàng đang ở trạng thái “Đang xử lý” mới được hủy.');
+    return;
+  }
+
+  order.status = 'Đã hủy';
+  order.paymentStatus = 'Đã hủy';
+
+  if (order.paymentMethod === 'Ví CanteenGo' && currentUser && currentUser.role !== 'guest') {
+    const refundedAmount = Number(order.total || order.subtotal || 0);
+    currentUser.walletBalance = getWalletBalance(currentUser) + refundedAmount;
+    persistCurrentUser(currentUser);
+  }
+
+  orders[index] = order;
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+
+  renderUserDashboard();
+  renderAccountOrdersTab();
+  alert(`Đơn hàng ${orderId} đã được hủy thành công.`);
 }
 
 function openProfileEditor() {
   if (!currentUser) return;
   populateProfileForm();
+  renderAccountOrdersTab();
+  switchAccountEditorTab('info');
   openModal('profileModal');
 }
 
@@ -567,6 +663,12 @@ document.getElementById('checkoutBtn')?.addEventListener('click', () => openChec
 document.querySelectorAll('.auth-mode-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
     showAuthMode(tab.dataset.authMode);
+  });
+});
+
+document.querySelectorAll('.account-editor-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    switchAccountEditorTab(tab.dataset.accountTab);
   });
 });
 
@@ -700,6 +802,11 @@ profileForm?.addEventListener('submit', (event) => {
     return;
   }
 
+  if (!address) {
+    alert('Vui lòng cập nhật địa chỉ giao hàng trước khi đặt món.');
+    return;
+  }
+
   currentUser = {
     ...currentUser,
     name,
@@ -716,6 +823,13 @@ profileForm?.addEventListener('submit', (event) => {
 });
 
 document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+
+document.addEventListener('click', (event) => {
+  const cancelBtn = event.target.closest('[data-cancel-order-id]');
+  if (cancelBtn) {
+    cancelOrder(cancelBtn.dataset.cancelOrderId);
+  }
+});
 
 function handleAdminRedirectNotice() {
   const params = new URLSearchParams(window.location.search);
@@ -755,7 +869,14 @@ document.querySelector('.checkout-form')?.addEventListener('submit', (event) => 
   }
 
   const form = event.target;
-  const address = (form.querySelector('input[type="text"]')?.value || '').trim() || '68 Nguyễn Chí Thanh, Láng, Hà Nội';
+  const address = (form.querySelector('input[type="text"]')?.value || '').trim();
+
+  if (!address) {
+    alert('Vui lòng cập nhật địa chỉ giao hàng trong thông tin tài khoản trước khi đặt hàng.');
+    openProfileEditor();
+    return;
+  }
+
   const paymentMethod = getSelectedPaymentMethod(form);
   const subtotal = getCartSubtotal();
   const total = getCartTotal();

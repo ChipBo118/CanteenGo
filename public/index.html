@@ -227,84 +227,6 @@
       </main>
 
       <section class="container user-dashboard" id="userDashboard" hidden>
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow dark">Tài khoản</span>
-            <h2>US05 - Thông tin tài khoản & đơn hàng</h2>
-          </div>
-        </div>
-
-        <div class="account-layout">
-          <div class="account-card">
-            <h3>US04 - Thông tin cá nhân</h3>
-            <table class="profile-table">
-              <tbody>
-                <tr>
-                  <th>Họ tên</th>
-                  <td id="profileName">-</td>
-                </tr>
-                <tr>
-                  <th>Email</th>
-                  <td id="profileEmail">-</td>
-                </tr>
-                <tr>
-                  <th>Vai trò</th>
-                  <td id="profileRole">-</td>
-                </tr>
-                <tr>
-                  <th>Trạng thái</th>
-                  <td id="profileStatus">-</td>
-                </tr>
-                <tr>
-                  <th>Số điện thoại</th>
-                  <td id="profilePhone">-</td>
-                </tr>
-                <tr>
-                  <th>Địa chỉ</th>
-                  <td id="profileAddress">-</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="account-card">
-            <h3>US05 - Bảng thông tin & trạng thái</h3>
-            <table class="profile-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn</th>
-                  <th>Ngày</th>
-                  <th>Món</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody id="userOrderTableBody">
-                <tr>
-                  <td colspan="4" class="empty-state">Chưa có đơn hàng.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="account-grid">
-          <div class="account-card">
-            <h3>US07 - Ví CanteenGo</h3>
-            <div class="wallet-box">
-              <span class="wallet-label">Số dư hiện tại</span>
-              <strong id="walletBalance">0đ</strong>
-            </div>
-          </div>
-
-          <div class="account-card">
-            <h3>US08 - Đánh giá & phản hồi</h3>
-            <ul class="feedback-list" id="feedbackList">
-              <li>Đánh giá món sau khi nhận hàng.</li>
-              <li>Nhận thông báo trạng thái đơn hàng.</li>
-              <li>Gửi phản hồi khi đơn bị hủy hoặc chậm.</li>
-            </ul>
-          </div>
-        </div>
       </section>
 
       <footer class="footer">
@@ -474,31 +396,63 @@
     </div>
 
     <div class="modal-overlay" id="profileModal">
-      <div class="modal-card">
+      <div class="modal-card account-modal-card">
         <button class="modal-close" type="button" data-close="profileModal">×</button>
         <div class="modal-header">
           <span class="eyebrow dark">Tài khoản</span>
-          <h3>Cập nhật thông tin</h3>
+          <h3>Thông tin tài khoản</h3>
         </div>
 
-        <form class="auth-form" id="profileForm">
-          <label>
-            <span>Họ và tên</span>
-            <input type="text" name="profileName" placeholder="Nguyễn Văn A" required />
-          </label>
-          <label>
-            <span>Số điện thoại</span>
-            <input type="tel" name="profilePhone" placeholder="0901 234 567" />
-          </label>
-          <label>
-            <span>Địa chỉ</span>
-            <textarea name="profileAddress" rows="3" placeholder="Số nhà, đường, phường, quận..."></textarea>
-          </label>
-          <div class="profile-actions">
-            <button type="button" class="secondary-btn" id="logoutBtn">Đăng xuất</button>
-            <button type="submit" class="primary-btn">Cập nhật thông tin</button>
+        <div class="account-editor-tabs" role="tablist" aria-label="Tài khoản">
+          <button type="button" class="account-editor-tab active" data-account-tab="info" role="tab" aria-selected="true">Thông tin tài khoản</button>
+          <button type="button" class="account-editor-tab" data-account-tab="orders" role="tab" aria-selected="false">Đơn hàng</button>
+        </div>
+
+        <div class="account-editor-panels">
+          <div class="account-editor-panel active" id="accountInfoPanel">
+            <form class="auth-form" id="profileForm">
+              <label>
+                <span>Họ và tên</span>
+                <input type="text" name="profileName" placeholder="Nguyễn Văn A" required />
+              </label>
+              <label>
+                <span>Vai trò</span>
+                <input type="text" name="profileRole" readonly placeholder="Vai trò tài khoản" />
+              </label>
+              <label>
+                <span>Số điện thoại</span>
+                <input type="tel" name="profilePhone" placeholder="0901 234 567" />
+              </label>
+              <label>
+                <span>Địa chỉ</span>
+                <textarea name="profileAddress" rows="3" placeholder="Số nhà, đường, phường, quận..."></textarea>
+              </label>
+              <div class="profile-actions">
+                <button type="button" class="secondary-btn" id="logoutBtn">Đăng xuất</button>
+                <button type="submit" class="primary-btn">Cập nhật thông tin</button>
+              </div>
+            </form>
           </div>
-        </form>
+
+          <div class="account-editor-panel" id="accountOrdersPanel">
+            <table class="profile-table account-order-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Ngày</th>
+                  <th>Trạng thái</th>
+                  <th>Tổng</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="profileOrdersTableBody">
+                <tr>
+                  <td colspan="5" class="empty-state">Chưa có đơn hàng nào.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
