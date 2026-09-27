@@ -1,4 +1,5 @@
-const cart = [];
+const CART_STORAGE_KEY = 'canteengo_cart';
+const cart = loadCart();
 const REVIEWS_STORAGE_KEY = 'canteengo_reviews';
 
 const cartItemsEl = document.getElementById('cart-items');
@@ -32,8 +33,23 @@ function showToast(message) {
   }, 1800);
 }
 
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveCart() {
+  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+}
+
 function renderCart() {
   if (!cart.length) {
+    localStorage.removeItem(CART_STORAGE_KEY);
     cartPanelEl.classList.add('cart-panel-hidden');
     cartCountEl.textContent = '0';
     subtotalEl.textContent = '0đ';
@@ -41,6 +57,8 @@ function renderCart() {
     updateCartReopenButton(0);
     return;
   }
+
+  saveCart();
 
   cartPanelEl.classList.remove('cart-panel-hidden');
 
@@ -157,7 +175,14 @@ function openCheckoutModal() {
   const checkoutAddress = document.querySelector('.checkout-form input[type="text"]');
   const checkoutTotal = document.getElementById('checkoutTotal');
 
-  if (currentUser && !String(currentUser.address || '').trim()) {
+  if (!currentUser || currentUser.role === 'guest') {
+    alert('Vui lòng đăng nhập trước khi đặt món.');
+    openModal('authModal');
+    showAuthMode('login');
+    return;
+  }
+
+  if (!String(currentUser.address || '').trim()) {
     alert('Vui lòng cập nhật địa chỉ giao hàng trong thông tin tài khoản trước khi đặt hàng.');
     openProfileEditor();
     return;
@@ -220,6 +245,7 @@ function addToCart(name, price) {
     cart.push({ name, price, quantity: 1 });
   }
 
+  saveCart();
   renderCart();
   showToast(`Đã thêm ${name} vào giỏ hàng`);
 }
@@ -234,6 +260,7 @@ function updateQuantity(name, change) {
     cart.splice(index, 1);
   }
 
+  saveCart();
   renderCart();
 }
 
@@ -589,13 +616,67 @@ const ROLE_DISPLAY = {
   admin: 'Quản trị viên',
 };
 
+function getAccountByIdentifier(identifier) {
+  const normalized = normalizeEmail(identifier);
+  if (!normalized) return null;
+
+  const candidates = [
+    ...DEMO_ACCOUNTS.student,
+    ...DEMO_ACCOUNTS.teacher,
+    ...DEMO_ACCOUNTS.admin,
+    ...getRegisteredAccounts(),
+  ];
+
+  return (
+    candidates.find((account) => {
+      const email = normalizeEmail(account.email);
+      const mssv = normalizeEmail(account.mssv || '');
+      return email === normalized || mssv === normalized;
+    }) || null
+  );
+}
+
+function hydrateCurrentUser(user) {
+  if (!user) return null;
+
+  const source = getAccountByIdentifier(user.email || user.identifier || '');
+  if (!source) return user;
+
+  const roleFromSource = source.role || user.role || classifyEmailRole(source.email || '');
+  const walletValue = Number.isFinite(Number(user.walletBalance))
+    ? Number(user.walletBalance)
+    : Number(source.walletBalance ?? getDefaultWalletBalance(roleFromSource));
+
+  return {
+    ...user,
+    role: roleFromSource,
+    name: user.name || source.name || '',
+    email: user.email || source.email || '',
+    identifier: user.identifier || source.email || source.mssv || '',
+    phone: user.phone || source.phone || '',
+    address: user.address || source.address || '',
+    walletBalance: walletValue,
+  };
+}
+
 function loadCurrentUser() {
   try {
     const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return hydrateCurrentUser(parsed);
   } catch (error) {
     return null;
   }
+}
+
+function refreshCurrentUserFromStorage() {
+  currentUser = loadCurrentUser();
+  if (currentUser) {
+    persistCurrentUser(currentUser);
+  }
+  updateAuthUI();
+  renderUserDashboard();
 }
 
 function persistCurrentUser(user) {
@@ -880,7 +961,12 @@ function openProfileEditor() {
 function handleLogout() {
   currentUser = null;
   persistCurrentUser(null);
+  cart.length = 0;
+  localStorage.removeItem(CART_STORAGE_KEY);
+  renderCart();
   closeModal('profileModal');
+  if (userDashboard) userDashboard.hidden = true;
+  renderUserDashboard();
   updateAuthUI();
 }
 
@@ -953,7 +1039,7 @@ function handleLoginFormSubmit(event) {
   }
 
   hideAuthError('login');
-  currentUser = {
+  currentUser = hydrateCurrentUser({
     role,
     name: account.name,
     email: account.email || normalizedIdentifier,
@@ -961,9 +1047,10 @@ function handleLoginFormSubmit(event) {
     phone: account.phone || '',
     address: account.address || '',
     walletBalance: Number(account.walletBalance ?? getDefaultWalletBalance(role)),
-  };
+  });
+  syncCurrentUserToStoredAccounts(currentUser);
   persistCurrentUser(currentUser);
-  updateAuthUI();
+  refreshCurrentUserFromStorage();
   form.reset();
   closeModal('authModal');
 }
@@ -1099,6 +1186,13 @@ document.getElementById('feedbackForm')?.addEventListener('submit', handleReview
 
 document.querySelector('.checkout-form')?.addEventListener('submit', (event) => {
   event.preventDefault();
+
+  if (!currentUser || currentUser.role === 'guest') {
+    alert('Bạn chưa đăng nhập. Vui lòng đăng nhập để đặt món.');
+    openModal('authModal');
+    showAuthMode('login');
+    return;
+  }
 
   if (!cart.length) {
     alert('Giỏ hàng đang trống. Vui lòng chọn món trước khi đặt hàng.');
