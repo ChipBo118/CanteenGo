@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
   ORDERS: 'canteengo_order_history',
 };
 
-const ORDER_STATUS_FLOW = ['Đang xử lý', 'Đang chuẩn bị', 'Đang giao', 'Đã giao'];
+const ORDER_STATUS_FLOW = ['Đang xử lý', 'Đang chuẩn bị', 'Đang giao', 'Đã giao', 'Đã hủy'];
 
 const ADMIN_EMAIL_SUFFIX = '@vwa.edu.vn';
 const STUDENT_EMAIL_SUFFIX = '@hpn.edu.vn';
