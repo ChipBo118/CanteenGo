@@ -121,7 +121,16 @@ button {
 .add-to-cart {
   border: none;
   border-radius: 14px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+.ghost-btn:hover,
+.filter-btn:hover,
+.checkout-btn:hover,
+.add-to-cart:hover {
+  filter: brightness(1.02);
 }
 
 .primary-btn,
@@ -348,6 +357,17 @@ button {
   bottom: 52px;
   flex-direction: column;
   align-items: flex-start;
+  animation: floatCard 5s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.card-one {
+  animation: floatCard 5s ease-in-out infinite;
+}
+
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 .mini-thumb {
@@ -635,6 +655,16 @@ button {
   border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.menu-card:hover,
+.process-card:hover,
+.store-card:hover,
+.review-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 30px rgba(31, 41, 55, 0.08);
+  border-color: rgba(255, 122, 26, 0.12);
 }
 
 .menu-image {
@@ -985,6 +1015,11 @@ button {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: transform 0.28s ease, opacity 0.28s ease, box-shadow 0.28s ease;
+}
+
+.cart-panel:hover {
+  box-shadow: 0 28px 60px rgba(18, 30, 49, 0.16);
 }
 
 .cart-panel.cart-panel-hidden {
@@ -1176,15 +1211,21 @@ button {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.34);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 30;
   padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .modal-overlay.active {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .modal-card {
@@ -1194,10 +1235,41 @@ button {
   border-radius: 28px;
   padding: 26px 24px 20px;
   box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(20px) scale(0.96);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.modal-overlay.active .modal-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .checkout-card {
   width: min(520px, 100%);
+}
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: rgba(17, 24, 39, 0.9);
+  color: white;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+  z-index: 50;
+}
+
+.toast.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .modal-close {

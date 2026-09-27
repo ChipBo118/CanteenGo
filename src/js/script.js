@@ -19,6 +19,18 @@ function updateCartReopenButton(totalQuantity) {
   cartReopenCountEl.textContent = String(totalQuantity);
 }
 
+function showToast(message) {
+  const toast = document.getElementById('appToast');
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.classList.add('visible');
+  clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = setTimeout(() => {
+    toast.classList.remove('visible');
+  }, 1800);
+}
+
 function renderCart() {
   if (!cart.length) {
     cartPanelEl.classList.add('cart-panel-hidden');
@@ -191,6 +203,7 @@ function addToCart(name, price) {
   }
 
   renderCart();
+  showToast(`Đã thêm ${name} vào giỏ hàng`);
 }
 
 function updateQuantity(name, change) {
@@ -631,7 +644,7 @@ function cancelOrder(orderId) {
 
   renderUserDashboard();
   renderAccountOrdersTab();
-  alert(`Đơn hàng ${orderId} đã được hủy thành công.`);
+  showToast(`Đơn hàng ${orderId} đã được hủy.`);
 }
 
 function openProfileEditor() {
@@ -819,7 +832,7 @@ profileForm?.addEventListener('submit', (event) => {
   updateAuthUI();
   renderUserDashboard();
   closeModal('profileModal');
-  alert('Cập nhật thông tin tài khoản thành công!');
+  showToast('Cập nhật thông tin tài khoản thành công!');
 });
 
 document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
@@ -924,7 +937,7 @@ document.querySelector('.checkout-form')?.addEventListener('submit', (event) => 
   if (currentUser) renderUserDashboard();
   updateWalletPaymentUI();
   closeModal('checkoutModal');
-  alert(`Đặt hàng thành công! Mã đơn của bạn là ${newOrder.id}.`);
+  showToast(`Đặt hàng thành công! Mã đơn ${newOrder.id}.`);
   form.reset();
 });
 
