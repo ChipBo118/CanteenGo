@@ -1,0 +1,503 @@
+# Kiến trúc backend thật cho dự án CanteenGo
+
+## 1. Mục tiêu
+
+Tài liệu này mô tả cấu trúc backend phù hợp với dự án CanteenGo nếu muốn chuyển từ phiên bản demo frontend hiện tại sang hệ thống backend thực tế, nhưng vẫn giữ đúng mô hình nghiệp vụ đang có trong app.
+
+Hiện tại, project đang là demo frontend chạy trên trình duyệt, với dữ liệu được lưu trong localStorage/sessionStorage. Vì vậy, phần “backend-like” trong code hiện tại chỉ là logic mô phỏng ở client, chưa phải server/backend thật.
+
+---
+
+## 2. Tổng quan về hiện trạng project
+
+### 2.1. Tình trạng hiện tại
+Project CanteenGo hiện tại đã có các chức năng chính sau:
+- đăng nhập / đăng ký
+- phân vai trò theo email
+- xem thực đơn
+- thêm món vào giỏ hàng
+- đặt hàng
+- quản lý đơn hàng
+- ví CanteenGo mô phỏng
+- dashboard admin
+
+Nhưng tất cả logic này đang chạy trên browser JavaScript, dựa trên:
+- localStorage
+- sessionStorage
+- biến JS trong client
+
+### 2.2. Điểm khác biệt giữa mock backend và backend thật
+
+| Phần | Demo hiện tại | Backend thật |
+|---|---|---|
+| Dữ liệu | localStorage | Database (MySQL/PostgreSQL) |
+| Auth | JS kiểm tra role/email | API + JWT/session |
+| Session | browser storage | server session/token |
+| Đơn hàng | lưu trong localStorage | lưu trong DB |
+| Payment | mô phỏng | cổng thanh toán thật |
+| Admin | JS render trên client | API + dashboard service |
+
+---
+
+## 3. Sơ đồ kiến trúc backend thật cho CanteenGo
+
+```mermaid
+flowchart TD
+    A[Client Web / Mobile App] --> B[Frontend Layer]
+    B --> C[API Gateway / REST API]
+
+    C --> D[Auth Controller]
+    C --> E[User Controller]
+    C --> F[Menu Controller]
+    C --> G[Order Controller]
+    C --> H[Payment Controller]
+    C --> I[Admin Controller]
+
+    D --> J[Auth Service]
+    E --> K[User Service]
+    F --> L[Menu Service]
+    G --> M[Order Service]
+    H --> N[Payment Service]
+    I --> O[Admin Dashboard Service]
+
+    J --> P[JWT / Session Manager]
+    K --> Q[User Repository]
+    L --> R[Menu Repository]
+    M --> S[Order Repository]
+    N --> T[Payment Repository]
+    O --> U[Analytics Repository]
+
+    Q --> V[(Database)]
+    R --> V
+    S --> V
+    T --> V
+    U --> V
+
+    N --> W[Payment Gateway]
+    W --> X[MoMo / VNPay / Stripe / Bank]
+
+    S --> Y[Event Bus / Notification Queue]
+    Y --> Z[Email / SMS / Push Notification]
+    O --> AA[Reporting Module]
+```
+
+---
+
+## 4. Giải thích từng tầng
+
+### 4.1. Client Web / Mobile App
+Là phần giao diện mà người dùng đang tương tác:
+- khách hàng xem menu
+- đăng nhập / đăng ký
+- thêm món vào giỏ
+- đặt hàng
+- xem lịch sử đơn
+- admin quản lý đơn và doanh thu
+
+Trong kiến trúc backend thật, client sẽ không tương tác trực tiếp với database. Nó chỉ gửi HTTP request tới API.
+
+### 4.2. Frontend Layer
+Phần frontend chịu trách nhiệm:
+- render giao diện
+- gửi request tới API
+- validate dữ liệu phía client
+- hiển thị response từ server
+
+Trong project hiện tại, phần frontend đang làm nhiều nghiệp vụ trực tiếp bằng JavaScript, nhưng khi chuyển sang backend thật thì frontend chỉ nên tập trung vào UI và API calls.
+
+### 4.3. API Gateway / REST API
+Đây là lớp đầu vào của hệ thống.
+
+Ví dụ endpoints đề xuất:
+- POST /api/auth/login
+- POST /api/auth/register
+- GET /api/menu
+- POST /api/orders
+- PUT /api/orders/:id/status
+- GET /api/users/me
+- POST /api/payments/checkout
+- GET /api/admin/dashboard
+
+Lớp API làm các nhiệm vụ:
+- validate request
+- xác thực token/session
+- phân quyền user/admin
+- gọi controller tương ứng
+- trả response chuẩnize
+
+### 4.4. Controller Layer
+Controller nhận request và điều phối đến service phù hợp.
+
+#### Auth Controller
+- đăng nhập
+- đăng ký
+- logout
+- reset password
+
+#### User Controller
+- lấy thông tin cá nhân
+- cập nhật hồ sơ
+- cập nhật địa chỉ giao hàng
+- xem lịch sử đặt hàng
+
+#### Menu Controller
+- lấy danh sách món
+- lọc theo danh mục
+- thêm/sửa/xoá món
+- upload hình ảnh
+
+#### Order Controller
+- tạo đơn hàng
+- kiểm tra giỏ hàng
+- hủy đơn
+- cập nhật trạng thái
+- xem chi tiết đơn
+
+#### Payment Controller
+- thanh toán bằng ví
+- thanh toán online
+- xác nhận giao dịch
+- hoàn tiền
+
+#### Admin Controller
+- doanh thu theo ngày/tháng
+- quản lý đơn hàng
+- thống kê món bán chạy
+- quản lý thực đơn
+
+### 4.5. Service Layer
+Đây là nơi chứa logic nghiệp vụ chính.
+
+#### Auth Service
+- kiểm tra định dạng email
+- xác định role từ đuôi email
+- kiểm tra mật khẩu
+- tạo JWT/token
+
+#### User Service
+- cập nhật họ tên, số điện thoại, địa chỉ
+- kiểm tra người dùng tồn tại
+- lấy thông tin profile
+
+#### Menu Service
+- validate món ăn
+- kiểm tra giá, mô tả, danh mục
+- tính toán dữ liệu hiển thị
+
+#### Order Service
+- tính subtotal, shipping fee, total
+- xác định trạng thái mới
+- kiểm tra điều kiện hủy đơn
+- cập nhật trạng thái theo quy trình
+
+#### Payment Service
+- kiểm tra số dư ví
+- trừ tiền khi thanh toán
+- ghi giao dịch
+- gọi cổng thanh toán nếu dùng online payment
+
+#### Admin Dashboard Service
+- thống kê doanh thu theo ngày/tháng
+- tìm món bán chạy nhất
+- tổng hợp dữ liệu cho dashboard
+
+### 4.6. Repository Layer
+Repository là lớp truy xuất dữ liệu.
+
+Ví dụ:
+- UserRepository
+- MenuRepository
+- OrderRepository
+- PaymentRepository
+- AnalyticsRepository
+
+Nhiệm vụ chính:
+- đọc/ghi database
+- query theo user, role, status
+- lấy dữ liệu menu, orders, payment, analytics
+
+### 4.7. Database
+Database lưu dữ liệu trung tâm của hệ thống. Các bảng nên có:
+
+#### users
+- id
+- name
+- email
+- password_hash
+- role
+- phone
+- address
+- wallet_balance
+- created_at
+
+#### menu_items
+- id
+- name
+- category
+- price
+- description
+- kcal
+- prep_time
+- image_url
+- is_active
+
+#### orders
+- id
+- user_id
+- customer_name
+- customer_email
+- address
+- payment_method
+- payment_status
+- total
+- shipping_fee
+- status
+- created_at
+
+#### order_items
+- id
+- order_id
+- menu_item_id
+- quantity
+- unit_price
+
+#### payments
+- id
+- order_id
+- amount
+- method
+- status
+- transaction_code
+- created_at
+
+#### reviews
+- id
+- order_id
+- user_id
+- rating
+- comment
+- created_at
+
+---
+
+## 5. Kiến trúc phân quyền theo vai trò
+
+Project hiện tại có logic phân loại email theo vai trò như sau:
+- @hpn.edu.vn → student
+- @hvpnvn.edu.vn → teacher
+- @vwa.edu.vn → admin
+- email khác → guest
+
+Trong backend thật, logic này sẽ nằm trong Auth Service hoặc User Service.
+
+```mermaid
+flowchart LR
+    A[Login Request] --> B[Auth Service]
+    B --> C{Email suffix}
+    C -->|@hpn.edu.vn| D[Student Role]
+    C -->|@hvpnvn.edu.vn| E[Teacher Role]
+    C -->|@vwa.edu.vn| F[Admin Role]
+    C -->|khác| G[Guest Role]
+    D --> H[JWT Token]
+    E --> H
+    F --> H
+    G --> H
+```
+
+### Quy tắc phân quyền đề xuất
+- Student: xem menu, đặt hàng, xem lịch sử cá nhân
+- Teacher: xem menu, đặt hàng, xem lịch sử
+- Guest: chỉ xem menu, có thể đăng ký tài khoản, không được dùng ví nếu chưa có account đăng nhập
+- Admin: quản lý menu, quản lý orders, dashboard doanh thu
+
+---
+
+## 6. Luồng đặt hàng trong backend thật
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant A as API
+    participant O as Order Service
+    participant P as Payment Service
+    participant D as Database
+
+    U->>F: Chọn món và đặt hàng
+    F->>A: POST /api/orders
+    A->>O: Validate cart, user, address
+    O->>D: Kiểm tra menu còn tồn tại
+    O->>D: Tính subtotal + shipping fee + total
+    O->>P: Xử lý thanh toán
+    P->>D: Cập nhật ví / tạo payment record
+    O->>D: Tạo đơn hàng và order_items
+    O-->>A: Trả về order info
+    A-->>F: 200 OK
+    F-->>U: Hiển thị xác nhận đơn hàng
+```
+
+### Quy trình đặt hàng:
+1. frontend gửi dữ liệu giỏ hàng và địa chỉ
+2. order service kiểm tra dữ liệu đầu vào
+3. kiểm tra tồn tại món ăn
+4. tính tổng tiền
+5. nếu thanh toán ví thì trừ số dư
+6. tạo đơn hàng mới
+7. lưu order_items
+8. cập nhật trạng thái ban đầu là Đang xử lý
+9. trả response cho client
+
+---
+
+## 7. Luồng admin quản lý đơn hàng
+
+```mermaid
+sequenceDiagram
+    participant A as Admin
+    participant F as Frontend
+    participant API as API
+    participant S as Admin Dashboard Service
+    participant D as Database
+
+    A->>F: Vào trang quản trị
+    F->>API: GET /api/admin/dashboard
+    API->>S: Lấy dữ liệu doanh thu và đơn hàng
+    S->>D: Query tổng hợp dữ liệu
+    D-->>S: Kết quả
+    S-->>API: Dashboard data
+    API-->>F: Trả về biểu đồ và bảng thống kê
+
+    A->>F: Thay đổi trạng thái đơn
+    F->>API: PUT /api/orders/:id/status
+    API->>S: Cập nhật trạng thái đơn
+    S->>D: Lưu trạng thái mới
+    D-->>S: Xác nhận
+    S-->>F: Thành công
+```
+
+### Các trạng thái đơn hàng đề xuất:
+- Đang xử lý
+- Đang chuẩn bị
+- Đang giao
+- Đã giao
+- Đã hủy
+
+Admin sẽ có quyền:
+- xem toàn bộ đơn hàng
+- thay đổi trạng thái
+- xem doanh thu
+- quản lý menu
+
+---
+
+## 8. Stack kiến trúc đề xuất cho CanteenGo
+
+Nếu làm theo chuẩn production, nên dùng stack như sau:
+- Frontend: HTML/CSS/JS hoặc React/Vue
+- Backend: Node.js + Express hoặc ASP.NET Core
+- Database: PostgreSQL hoặc MySQL
+- Auth: JWT + refresh token
+- Payment: MoMo / VNPay / Stripe
+- Cache: Redis
+- Notification: email/SMS/push
+- Queue: RabbitMQ hoặc Kafka nếu có xử lý bất đồng bộ
+
+### Cấu trúc backend khuyến nghị
+
+```text
+backend/
+├── app/
+│   ├── controllers/
+│   ├── services/
+│   ├── repositories/
+│   ├── models/
+│   ├── middleware/
+│   ├── validators/
+│   └── utils/
+├── config/
+│   ├── database.js
+│   ├── jwt.js
+│   └── env.js
+├── routes/
+│   ├── auth.js
+│   ├── users.js
+│   ├── menu.js
+│   ├── orders.js
+│   ├── payments.js
+│   └── admin.js
+├── database/
+│   ├── migrations/
+│   └── seeders/
+├── tests/
+│   ├── auth.test.js
+│   ├── orders.test.js
+│   └── admin.test.js
+├── server.js
+├── .env
+├── package.json
+└── README.md
+```
+
+---
+
+## 9. So sánh giữa project hiện tại và backend thật
+
+### 9.1. Project hiện tại
+- frontend-only
+- nhiễm logic business vào JS trong browser
+- lưu dữ liệu vào localStorage/sessionStorage
+- auth mô phỏng, không có server-side validation thật
+- payment mô phỏng
+- dashboard chỉ là render dữ liệu client-side
+
+### 9.2. Backend thật cần có
+- server chạy độc lập
+- database thực
+- API endpoints
+- auth server-side
+- phân quyền role thực tế
+- xử lý order và payment thật
+- dashboard từ DB
+
+---
+
+## 10. Kết luận
+
+Nếu chuyển CanteenGo sang backend thật, kiến trúc đúng sẽ theo mô hình:
+
+Client → API → Service → Repository → Database
+
+và các module chính cần có là:
+- Authentication
+- User management
+- Menu management
+- Order management
+- Payment processing
+- Admin dashboard
+- Notification and reporting
+
+Đây là cấu trúc phù hợp nhất với các chức năng mà dự án đang có và với yêu cầu mô tả trong nhóm G9.
+
+Hiện tại, CanteenGo đang ở mức demo frontend + mock backend, nhưng nếu phát triển tiếp theo, kiến trúc này là hướng đi đúng để chuyển thành hệ thống thực tế.
+
+---
+
+## 11. Tóm tắt ngắn cho báo cáo
+
+### Backend thật cho CanteenGo nên có:
+- Auth service
+- User service
+- Menu service
+- Order service
+- Payment service
+- Admin analytics service
+- Database layer
+- API endpoints
+- JWT/session manager
+- Payment gateway integration
+
+### Project hiện tại đang là:
+- frontend demo
+- mock backend bằng localStorage/sessionStorage
+- business logic chạy trên browser
+- không có server/database thật

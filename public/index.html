@@ -518,6 +518,56 @@
       </div>
     </div>
 
+    <div class="modal-overlay" id="itemDetailModal">
+      <div class="modal-card account-modal-card">
+        <button class="modal-close" type="button" data-close="itemDetailModal">×</button>
+        <div class="modal-header">
+          <span class="eyebrow dark">Menu</span>
+          <h3>Chi tiết món ăn</h3>
+        </div>
+        <div id="itemDetailContent"></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="orderDetailModal">
+      <div class="modal-card account-modal-card">
+        <button class="modal-close" type="button" data-close="orderDetailModal">×</button>
+        <div class="modal-header">
+          <span class="eyebrow dark">Đơn hàng</span>
+          <h3>Chi tiết đơn hàng</h3>
+        </div>
+        <div id="orderDetailContent"></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="reviewModal">
+      <div class="modal-card">
+        <button class="modal-close" type="button" data-close="reviewModal">×</button>
+        <div class="modal-header">
+          <span class="eyebrow dark">Đánh giá</span>
+          <h3>Gửi phản hồi món ăn</h3>
+        </div>
+        <form id="feedbackForm" class="auth-form">
+          <input type="hidden" name="reviewOrderId" />
+          <label>
+            <span>Đánh giá sao</span>
+            <select name="reviewRating" required>
+              <option value="5">5 sao</option>
+              <option value="4">4 sao</option>
+              <option value="3">3 sao</option>
+              <option value="2">2 sao</option>
+              <option value="1">1 sao</option>
+            </select>
+          </label>
+          <label>
+            <span>Nhận xét</span>
+            <textarea name="reviewComment" rows="4" placeholder="Món ăn ngon, giao hàng đúng giờ, ..." required></textarea>
+          </label>
+          <button type="submit" class="primary-btn full-width">Gửi đánh giá</button>
+        </form>
+      </div>
+    </div>
+
     <script src="../src/js/data.js"></script>
     <script src="../src/js/script.js"></script>
   </body>

@@ -1,4 +1,5 @@
 const cart = [];
+const REVIEWS_STORAGE_KEY = 'canteengo_reviews';
 
 const cartItemsEl = document.getElementById('cart-items');
 const cartCountEl = document.getElementById('cart-count');
@@ -111,6 +112,23 @@ function updateWalletPaymentUI() {
 function getSelectedPaymentMethod(form) {
   const selected = form.querySelector('input[name="paymentMethod"]:checked');
   return selected ? selected.value : 'Thanh toán khi nhận hàng';
+}
+
+function getOrderStatusClass(status) {
+  switch (status) {
+    case 'Đang xử lý':
+      return 'status-processing';
+    case 'Đang chuẩn bị':
+      return 'status-preparing';
+    case 'Đang giao':
+      return 'status-delivering';
+    case 'Đã giao':
+      return 'status-delivered';
+    case 'Đã hủy':
+      return 'status-cancelled';
+    default:
+      return 'status-processing';
+  }
 }
 
 function getOrderHistory() {
@@ -250,6 +268,24 @@ cartReopenBtn?.addEventListener('click', () => {
 // Một listener duy nhất cho toàn trang: xử lý cả nút "+ Thêm" (được sinh động
 // từ danh sách món ăn) lẫn các nút tăng/giảm số lượng trong giỏ hàng.
 document.addEventListener('click', (event) => {
+  const detailBtn = event.target.closest('[data-detail-item-id]');
+  if (detailBtn && !event.target.closest('.add-to-cart')) {
+    openItemDetail(detailBtn.dataset.detailItemId);
+    return;
+  }
+
+  const reviewBtn = event.target.closest('[data-review-order-id]');
+  if (reviewBtn) {
+    openReviewModal(reviewBtn.dataset.reviewOrderId);
+    return;
+  }
+
+  const orderBtn = event.target.closest('[data-order-detail-id]');
+  if (orderBtn) {
+    openOrderDetail(orderBtn.dataset.orderDetailId);
+    return;
+  }
+
   const addBtn = event.target.closest('.add-to-cart');
   if (addBtn) {
     addToCart(addBtn.dataset.name, Number(addBtn.dataset.price));
@@ -317,15 +353,192 @@ function buildMenuCard(item) {
 function renderMenu() {
   if (!menuGridEl) return;
   const items = getMenuItems();
-  menuGridEl.innerHTML = items.map(buildMenuCard).join('');
+  menuGridEl.innerHTML = items.map((item) => `
+    <article class="menu-card" data-category="${item.category}" data-detail-item-id="${item.id}">
+      <div class="menu-image ${item.image || 'menu-image-fallback'}" ${item.imageUrl ? `style="background-image:url('${item.imageUrl}')"` : ''}>
+        ${item.imageUrl ? '' : `<span>${(item.name || '?').charAt(0).toUpperCase()}</span>`}
+      </div>
+      <div class="menu-body">
+        <div class="menu-topline">
+          <span class="tag ${item.tagClass || ''}">${item.tagLabel || ''}</span>
+          <span class="rating">★ ${item.rating ?? '4.8'}</span>
+        </div>
+        <h3>${item.name}</h3>
+        <p>${item.description || ''}</p>
+        <div class="menu-meta">
+          <span>${item.kcal || 0} kcal</span>
+          <span>${item.time || 0} phút</span>
+        </div>
+        <div class="menu-footer">
+          <strong>${formatMoney(item.price)}</strong>
+          <div class="menu-actions">
+            <button class="ghost-btn" type="button" data-detail-item-id="${item.id}">Chi tiết</button>
+            <button class="add-to-cart" data-name="${item.name}" data-price="${item.price}">+ Thêm</button>
+          </div>
+        </div>
+      </div>
+    </article>
+  `).join('');
 
-  // Áp dụng lại bộ lọc danh mục đang được chọn (nếu khác "Tất cả")
   const activeFilterBtn = document.querySelector('.filter-btn.active');
   const selected = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
   document.querySelectorAll('.menu-card').forEach((card) => {
     const show = selected === 'all' || card.dataset.category === selected;
     card.style.display = show ? 'block' : 'none';
   });
+}
+
+function getStoredReviews() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(REVIEWS_STORAGE_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveStoredReviews(reviews) {
+  localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
+}
+
+function renderDefaultReviews() {
+  const reviewGrid = document.querySelector('.review-grid');
+  if (!reviewGrid) return;
+
+  const reviews = getStoredReviews();
+  const fallback = [
+    { id: 'default-1', name: 'Nguyễn Thảo', role: 'Sinh viên', rating: 5, comment: 'Món ăn ngon, giao hàng đúng giờ và rất tiện cho buổi học.' },
+    { id: 'default-2', name: 'Hà Minh', role: 'Giảng viên', rating: 5, comment: 'Combo bữa trưa tiết kiệm thời gian, phù hợp cho ngày làm việc bận.' },
+    { id: 'default-3', name: 'Linh Anh', role: 'Khách hàng', rating: 4, comment: 'Menu đa dạng, dễ đặt và đổi món nhanh.' },
+  ];
+
+  const items = reviews.length ? reviews : fallback;
+  reviewGrid.innerHTML = items
+    .slice(0, 3)
+    .map(
+      (review) => `
+        <article class="review-card">
+          <div class="review-user">
+            <div class="avatar avatar-${(review.name || 'N').charAt(0).toLowerCase() === 'h' ? 'two' : (review.name || 'N').charAt(0).toLowerCase() === 'l' ? 'three' : 'one'}">${(review.name || 'N').charAt(0).toUpperCase()}</div>
+            <div>
+              <strong>${review.name || 'Khách hàng'}</strong>
+              <span>${review.role || 'Khách hàng'}</span>
+            </div>
+          </div>
+          <p>"${review.comment || 'Món ăn ngon và phục vụ tốt.'}"</p>
+          <div class="rating">${'★'.repeat(Number(review.rating || 5))}${'☆'.repeat(5 - Number(review.rating || 5))}</div>
+        </article>
+      `
+    )
+    .join('');
+}
+
+function openItemDetail(itemId) {
+  const item = getMenuItems().find((entry) => Number(entry.id) === Number(itemId));
+  const container = document.getElementById('itemDetailContent');
+  if (!item || !container) return;
+
+  container.innerHTML = `
+    <div class="item-detail-layout">
+      <div class="menu-image ${item.image || 'menu-image-fallback'}" ${item.imageUrl ? `style="background-image:url('${item.imageUrl}')"` : ''}>
+        ${item.imageUrl ? '' : `<span>${(item.name || '?').charAt(0).toUpperCase()}</span>`}
+      </div>
+      <div class="item-detail-body">
+        <div class="menu-topline">
+          <span class="tag ${item.tagClass || ''}">${item.tagLabel || ''}</span>
+          <span class="rating">★ ${item.rating ?? '4.8'}</span>
+        </div>
+        <h3>${item.name}</h3>
+        <p>${item.description || 'Món ăn được yêu thích trong menu hôm nay.'}</p>
+        <div class="menu-meta">
+          <span>${item.kcal || 0} kcal</span>
+          <span>${item.time || 0} phút</span>
+        </div>
+        <div class="detail-meta-row">
+          <strong>${formatMoney(item.price)}</strong>
+          <button class="add-to-cart" data-name="${item.name}" data-price="${item.price}">+ Thêm vào giỏ</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  openModal('itemDetailModal');
+}
+
+function openOrderDetail(orderId) {
+  const order = getOrderHistory().find((entry) => entry.id === orderId);
+  const container = document.getElementById('orderDetailContent');
+  if (!order || !container) return;
+
+  const rows = (order.items || [])
+    .map((item) => `<li>${item.name} × ${item.quantity} — ${formatMoney(item.price * item.quantity)}</li>`)
+    .join('');
+
+  container.innerHTML = `
+    <div class="order-detail-wrap">
+      <div class="order-detail-header">
+        <strong>Mã đơn: ${order.id}</strong>
+        <span class="status-badge ${getOrderStatusClass(order.status)}">${order.status}</span>
+      </div>
+      <div class="order-detail-grid">
+        <p><strong>Khách hàng:</strong> ${order.customerName || 'Khách hàng'}</p>
+        <p><strong>Email:</strong> ${order.customerEmail || 'guest@canteengo.local'}</p>
+        <p><strong>Ngày:</strong> ${order.date || '—'}</p>
+        <p><strong>Thanh toán:</strong> ${order.paymentMethod || 'Chưa xác định'}</p>
+        <p><strong>Trạng thái thanh toán:</strong> ${order.paymentStatus || 'Chưa thanh toán'}</p>
+        <p><strong>Địa chỉ:</strong> ${order.address || 'Không có địa chỉ'}</p>
+      </div>
+      <div class="order-items-box">
+        <h4>Món trong đơn</h4>
+        <ul>${rows || '<li>Không có món nào.</li>'}</ul>
+      </div>
+      <div class="checkout-row total-row highlight-row">
+        <span>Tổng tiền</span>
+        <strong>${formatMoney(order.total || 0)}</strong>
+      </div>
+    </div>
+  `;
+
+  openModal('orderDetailModal');
+}
+
+function openReviewModal(orderId) {
+  const form = document.getElementById('feedbackForm');
+  if (!form) return;
+  form.reviewOrderId.value = orderId;
+  openModal('reviewModal');
+}
+
+function handleReviewSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const orderId = form.reviewOrderId.value;
+  const rating = Number(form.reviewRating.value || 5);
+  const comment = (form.reviewComment.value || '').trim();
+
+  if (!orderId || !comment) {
+    alert('Vui lòng nhập nhận xét trước khi gửi đánh giá.');
+    return;
+  }
+
+  const order = getOrderHistory().find((entry) => entry.id === orderId);
+  const review = {
+    id: `review-${Date.now()}`,
+    name: currentUser?.name || 'Khách hàng',
+    role: currentUser ? ROLE_DISPLAY[currentUser.role] || 'Khách hàng' : 'Khách hàng',
+    rating,
+    comment,
+    item: order && order.items && order.items.length ? order.items[0].name : 'Món ăn',
+    date: new Date().toLocaleDateString('vi-VN'),
+  };
+
+  const reviews = getStoredReviews();
+  reviews.unshift(review);
+  saveStoredReviews(reviews.slice(0, 6));
+  renderDefaultReviews();
+  closeModal('reviewModal');
+  form.reset();
+  showToast('Cảm ơn bạn đã đánh giá món ăn.');
 }
 
 // Tự cập nhật thực đơn nếu dữ liệu món ăn thay đổi từ tab/trang quản trị khác
@@ -464,6 +677,7 @@ function getUserOrderRows() {
       status: order.status,
       total: order.total || order.subtotal || 0,
       canCancel: order.status === 'Đang xử lý',
+      canReview: order.status === 'Đã giao',
     }));
 }
 
@@ -531,7 +745,11 @@ function renderUserDashboard() {
               <td>${order.item}</td>
               <td>${order.status}</td>
               <td>
-                ${order.canCancel ? `<button type="button" class="cancel-order-btn" data-cancel-order-id="${order.id}">Hủy đơn</button>` : '<span class="order-action-disabled">-</span>'}
+                <div class="inline-order-actions">
+                  <button type="button" class="ghost-btn small-btn" data-order-detail-id="${order.id}">Chi tiết</button>
+                  ${order.canCancel ? `<button type="button" class="cancel-order-btn" data-cancel-order-id="${order.id}">Hủy đơn</button>` : ''}
+                  ${order.canReview ? `<button type="button" class="secondary-btn small-btn" data-review-order-id="${order.id}">Đánh giá</button>` : ''}
+                </div>
               </td>
             </tr>
           `
@@ -611,7 +829,11 @@ function renderAccountOrdersTab() {
           <td>${order.status}</td>
           <td>${formatMoney(order.total)}</td>
           <td>
-            ${order.canCancel ? `<button type="button" class="cancel-order-btn" data-cancel-order-id="${order.id}">Hủy đơn</button>` : '<span class="order-action-disabled">Không thể</span>'}
+            <div class="inline-order-actions">
+              <button type="button" class="ghost-btn small-btn" data-order-detail-id="${order.id}">Chi tiết</button>
+              ${order.canCancel ? `<button type="button" class="cancel-order-btn" data-cancel-order-id="${order.id}">Hủy đơn</button>` : '<span class="order-action-disabled">Không thể</span>'}
+              ${order.canReview ? `<button type="button" class="secondary-btn small-btn" data-review-order-id="${order.id}">Đánh giá</button>` : ''}
+            </div>
           </td>
         </tr>
       `
@@ -872,6 +1094,8 @@ document.querySelectorAll('.modal-overlay').forEach((modal) => {
     if (event.target === modal) modal.classList.remove('active');
   });
 });
+
+document.getElementById('feedbackForm')?.addEventListener('submit', handleReviewSubmit);
 
 document.querySelector('.checkout-form')?.addEventListener('submit', (event) => {
   event.preventDefault();

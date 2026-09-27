@@ -1360,6 +1360,146 @@ button {
   flex: 1;
 }
 
+.inline-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.small-btn {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.76rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.status-processing { background: rgba(255, 122, 26, 0.12); color: var(--primary-dark); }
+.status-preparing { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; }
+.status-delivering { background: rgba(168, 85, 247, 0.12); color: #7c3aed; }
+.status-delivered { background: rgba(27, 191, 115, 0.12); color: #147b4b; }
+.status-cancelled { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+
+.item-detail-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.item-detail-body {
+  display: grid;
+  gap: 14px;
+}
+
+.detail-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.order-detail-wrap {
+  display: grid;
+  gap: 16px;
+}
+
+.order-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  color: var(--muted);
+}
+
+.order-items-box {
+  border: 1px solid var(--border);
+  background: #fafbfd;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+}
+
+.order-items-box h4 {
+  margin: 0 0 8px;
+}
+
+.order-items-box ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+}
+
+.payment-options {
+  display: grid;
+  gap: 8px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 0.8rem;
+  background: #f9fafb;
+}
+
+.payment-option input {
+  margin: 0;
+}
+
+.wallet-payment-box {
+  background: rgba(255, 122, 26, 0.05);
+  border: 1px solid rgba(255, 122, 26, 0.12);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 8px;
+}
+
+.wallet-payment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.wallet-payment-box p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.menu-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .item-detail-layout,
+  .order-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .switch-copy a {
   color: var(--primary-dark);
   font-weight: 700;
